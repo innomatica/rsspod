@@ -1,12 +1,12 @@
 // app info
 const appName = 'RssPod';
-const appVersion = '1.0.4+5';
-const appId = 'com.innomatic.jacto';
+const appVersion = '1.0.0+1';
+const appId = 'com.innomatic.rsspod';
 
 const developerWebsite = 'https://innomatic.ca';
-const sourceRepository = 'https://github.com/innomatica/jacto';
+const sourceRepository = 'https://github.com/innomatica/rsspod';
 const favoriteUrl =
-    'https://raw.githubusercontent.com/innomatica/jacto/refs/heads/master/favorites.json';
+    'https://raw.githubusercontent.com/innomatica/rsspod/refs/heads/master/favorites.json';
 
 // podcast index
 const pcIdxEndpoint = 'https://api.podcastindex.org/api/1.0';
