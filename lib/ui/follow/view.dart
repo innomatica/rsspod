@@ -108,6 +108,7 @@ class FollowView extends StatelessWidget {
           // onPressed: () => context.pop(),
           onPressed: () => context.go('/'),
         ),
+        title: Text('Subscriptions'),
       ),
       body: ListenableBuilder(
         listenable: model,

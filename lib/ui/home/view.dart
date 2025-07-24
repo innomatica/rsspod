@@ -91,8 +91,12 @@ class _HomeViewState extends State<HomeView> {
     return episodes.isNotEmpty
         ? ListView.separated(
             itemCount: episodes.length,
-            separatorBuilder: (context, _) =>
-                const Divider(indent: 8, endIndent: 8, height: 0),
+            separatorBuilder: (context, _) => Divider(
+              indent: 0,
+              endIndent: 0,
+              height: 0,
+              // color: Theme.of(context).colorScheme.primary,
+            ),
             itemBuilder: (context, index) {
               final episode = episodes[index];
               final downloaded = episode.downloaded == true;
@@ -220,17 +224,18 @@ class _HomeViewState extends State<HomeView> {
                           : () => widget.model.addToPlayList(episode),
                       visualDensity: VisualDensity.compact,
                     ),
-                    // play
-                    IconButton(
-                      icon: Icon(Icons.headphones_rounded),
-                      onPressed: played
-                          ? null
-                          : () => widget.model.playEpisode(episode),
-                      visualDensity: VisualDensity.compact,
-                    ),
+                    // // play
+                    // IconButton(
+                    //   icon: Icon(Icons.headphones_rounded),
+                    //   onPressed: played
+                    //       ? null
+                    //       : () => widget.model.playEpisode(episode),
+                    //   visualDensity: VisualDensity.compact,
+                    // ),
                   ],
                 ),
-                onTap: () async {
+                onTap: played ? null : () => widget.model.playEpisode(episode),
+                onLongPress: () async {
                   context.go(
                     Uri(
                       path: '/episode',
