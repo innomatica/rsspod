@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
@@ -18,7 +20,10 @@ class MiniPlayer extends StatelessWidget {
       builder: (context, snapshot) {
         return snapshot.hasData && snapshot.data!.sequence.isNotEmpty
             ? Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12.0,
+                  vertical: 4.0,
+                ),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
@@ -36,6 +41,10 @@ class MiniPlayer extends StatelessWidget {
                             showModalBottomSheet(
                               context: context,
                               builder: (context) => ModalPlayer(),
+                            );
+                            Timer(
+                              const Duration(seconds: 20),
+                              () => Navigator.pop(context),
                             );
                           },
                           child: Text(
@@ -180,7 +189,7 @@ class ModalPlayer extends StatelessWidget {
                       // position slider
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16.0,
+                          horizontal: 24.0,
                           vertical: 8.0,
                         ),
                         child: Slider(
@@ -245,7 +254,7 @@ class ModalPlayer extends StatelessWidget {
                       snapshot.data == true
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
-                      size: 40.0,
+                      size: 48.0,
                     ),
                     onPressed: () async {
                       player.playing
