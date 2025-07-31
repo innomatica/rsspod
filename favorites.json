@@ -1,0 +1,107 @@
+[
+  {
+    "title": "Because News",
+    "url": "https://www.cbc.ca/podcasting/includes/becausenews.xml",
+    "link": "http://www.cbc.ca/becausenews",
+    "description": "Because News is Canada's funniest news quiz. Host Gavin Crawford quizzes comedians and celebrities about the headlines.",
+    "keywords": "comedy"
+  },
+  {
+    "title": "Hard Fork",
+    "url": "https://feeds.simplecast.com/l2i9YnTd",
+    "link": "https://www.nytimes.com/column/hard-fork",
+    "description": "Hard Fork is a show about the future that’s already here. Each week, journalists Kevin Roose and Casey Newton explore and make sense of the latest in the rapidly changing world of tech.",
+    "keywords": "technology"
+  },
+  {
+    "title": "Huberman Lab",
+    "url": "https://feeds.megaphone.fm/hubermanlab",
+    "link": "https://www.hubermanlab.com",
+    "description": "The podcast discusses neuroscience and science-based tools, including how our brain and its connections with the organs of our body control our perceptions, our behaviors, and our health, as well as existing and emerging tools for measuring and changing how our nervous system works.",
+    "keywords": "health and fitness, science, life sciencs"
+  },
+  {
+    "title": "Laugh Out Loud",
+    "url": "https://www.cbc.ca/podcasting/includes/laughoutloud.xml",
+    "link": "https://www.cbc.ca/radio/laughoutloud",
+    "description": "Laugh Out Loud is your radio and web destination for Canadian comedy. From the famous to the newly found, you are guaranteed to laugh out loud. Every week, host Ali Hassan crosses the country and cruises the Web to bring you what's new and hot in Canadian comedy from stand-up to sketch to musical comedy and beyond.",
+    "keywords": "comedy"
+  },
+  {
+    "title": "Late Night Linux All Episodes",
+    "url": "https://latenightlinux.com/feed/all",
+    "link": "https://latenightlinux.com",
+    "description": "All episodes from Late Night Linux, Linux Dev Time, Linux After Dark, 2.5 Admins, Linux Matters, Hybrid Cloud Show, and Ask The Hosts.",
+    "keywords": "technology"
+  },
+  {
+    "title": "Lex Fridman Podcast",
+    "url": "https://lexfridman.com/feed/podcast/",
+    "link": "https://lexfridman.com/",
+    "description": "Conversations about science, technology, history, philosophy and the nature of intelligence, consciousness, love, and power. Lex is an AI researcher at MIT and beyond.",
+    "keywords": "technology, science, society & culture, philosophy"
+  },
+  {
+    "title": "MIT Technology Review Narrated",
+    "url": "https://feeds.megaphone.fm/inmachineswetrust",
+    "link": "https://www.technologyreview.com/",
+    "description": "Welcome to MIT Technology Review Narrated, the home for the very best of our journalism in audio. Each week we will share one of our most ambitious stories, from print and online, narrated for us by real voice actors. Expect big themes, thought-provoking topics, and sharp analysis, all backed by our trusted reporting.",
+    "keywords": "technology, news, science"
+  },
+  {
+    "title": "Radiolab",
+    "url": "https://feeds.simplecast.com/EmVW7VGp",
+    "link": "https://radiolab.org/",
+    "description": "Radiolab is on a curiosity bender. We ask deep questions and use investigative journalism to get the answers. A given episode might whirl you through science, legal history, and into the home of someone halfway across the world. The show is known for innovative sound design, smashing information into music.",
+    "keywords": "science, culture, documentary, history"
+  },
+  {
+    "title": "Science Friday",
+    "url": "https://feeds.feedburner.com/science-friday/",
+    "link": "https://www.wnycstudios.org/podcasts/science-friday",
+    "description": "Covering the outer reaches of space to the tiniest microbes in our bodies, Science Friday is the source for entertaining and educational stories about science, technology, and other cool stuff.",
+    "keywords": "science, natural sciences"
+  },
+  {
+    "title": "Sean Carroll's Mindscape: Science, Society, Philosophy, Culture, Arts, and Ideas",
+    "url": "https://rss.art19.com/sean-carrolls-mindscape",
+    "link": "https://www.preposterousuniverse.com/podcast/",
+    "description": "Ever wanted to know how music affects your brain, what quantum mechanics really is, or how black holes work? Do you wonder why you get emotional each time you see a certain movie, or how on earth video games are designed? Then you’ve come to the right place. Each week, Sean Carroll will host conversations with some of the most interesting thinkers in the world. From neuroscientists and engineers to authors and television producers, Sean and his guests talk about the biggest ideas in science, philosophy, culture and much more.",
+    "keywords": "science, physics, society & culture, philosophy"
+  },
+  {
+    "title": "Super Data Science: ML & AI Podcast with Jon Krohn",
+    "url": "https://feeds.megaphone.fm/SUPERDATASCIENCEPTYLTD9836501887",
+    "link": "https://www.superdatascience.com/podcast",
+    "description": "The latest machine learning, A.I., and data career topics from across both academia and industry are brought to you by host Dr. Jon Krohn on the Super Data Science Podcast. As the quantity of data on our planet doubles every couple of years and with this trend set to continue for decades to come, there's an unprecedented opportunity for you to make a meaningful impact in your lifetime. In conversation with the biggest names in the data science industry, Jon cuts through hype to fuel that professional impact.",
+    "keywords": "technology, science"
+  },
+  {
+    "title": "Tech Won't Save Us",
+    "url": "https://feeds.buzzsprout.com/1004689.rss",
+    "link": "https://techwontsave.us/",
+    "description": "Silicon Valley wants to shape our future, but why should we let it? Every Thursday, Paris Marx is joined by a new guest to critically examine the tech industry, its big promises, and the people behind them. Tech Won’t Save Us challenges the notion that tech alone can drive our world forward by showing that separating tech from politics has consequences for us all, especially the most vulnerable. It’s not your usual tech podcast.",
+    "keywords": "technology, news, arts, books"
+  },
+  {
+    "title": "TED Radio Hour",
+    "url": "https://feeds.npr.org/510298/podcast.xml",
+    "link": "https://www.npr.org/podcasts/510298/ted-radio-hour",
+    "description": "Exploring the biggest questions of our time with the help of the world's greatest thinkers. Host Manoush Zomorodi inspires us to learn more about the world, our communities, and most importantly, ourselves.",
+    "keywords": "technology, science, culture"
+  },
+  {
+    "title": "The Pulse",
+    "url": "https://feeds.npr.org/510371/podcast.xml",
+    "link": "https://www.npr.org/podcasts/510371/the-pulse",
+    "description": "Go on an adventure into unexpected corners of the health and science world each week with award-winning host Maiken Scott. The Pulse takes you behind the doors of operating rooms, into the lab with some of the world's foremost scientists, and back in time to explore life-changing innovations. The Pulse delivers stories in ways that matter to you, and answers questions you never knew you had.",
+    "keywords": "science, health & fitness, technology"
+  },
+  {
+    "title": "TLDR",
+    "url": "https://feeds.simplecast.com/3Tb7al4A",
+    "link": "https://wealthsimple-tldr-podcast.simplecast.com",
+    "description": "Money isn't just money. It's culture. It's news. It's being able to retire. Every Wednesday, the TLDR podcast catches you up on everything going on in the world of money that you didn't know you actually cared about.",
+    "keywords": "business, investing, news, society & culture"
+  }
+]
