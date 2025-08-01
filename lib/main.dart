@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
       routerConfig: router,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.lightGreen,
+          seedColor: Colors.purpleAccent,
           brightness: Brightness.dark,
         ),
       ),
