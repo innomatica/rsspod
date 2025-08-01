@@ -19,7 +19,7 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   // ignore: unused_field
-  final _log = Logger('HomeModel');
+  final _logger = Logger('HomeViewModel');
   List<Episode> _episodes = [];
   Settings? _settings;
   IndexedAudioSource? _currentSource;
@@ -37,8 +37,9 @@ class HomeViewModel extends ChangeNotifier {
   String? get currentId => _currentSource?.tag.id;
 
   void _init() {
+    _logger.fine('init');
     _subPlayer = _player.playerStateStream.listen((event) async {
-      _log.fine('playerState: ${event.playing} - ${event.processingState}');
+      _logger.fine('playerState: ${event.playing} - ${event.processingState}');
       //
       // playing: true / false
       // processingState: idle / loading / buffering /  ready/ completed
@@ -56,7 +57,7 @@ class HomeViewModel extends ChangeNotifier {
       }
     });
     _subSeqState = _player.sequenceStateStream.listen((event) async {
-      _log.fine('sequenceState: $event');
+      _logger.fine('sequenceState: $event');
       //
       // currentIndex
       // currentSource
@@ -78,7 +79,7 @@ class HomeViewModel extends ChangeNotifier {
       // set the previous episode played : CAN BE PROBLEMATIC
       //
       if (_currentSource?.tag.id != null && state.sequence.length > 1) {
-        _log.fine('set played: ${_currentSource?.tag.title}');
+        _logger.fine('set played: ${_currentSource?.tag.title}');
         await _feedRepo.setPlayed(_currentSource?.tag.id);
       }
       //
@@ -102,19 +103,19 @@ class HomeViewModel extends ChangeNotifier {
       final source = sequence[index];
       if (duration != null && (position + Duration(seconds: 30) > duration)) {
         // end of the media
-        _log.fine('set played: ${source.tag.title}');
+        _logger.fine('set played: ${source.tag.title}');
         await _feedRepo.setPlayed(source.tag.id);
         await load();
       } else {
         // paused or seek
-        _log.fine('update bookmark: ${source.tag.title}');
+        _logger.fine('update bookmark: ${source.tag.title}');
         await _feedRepo.updateBookmark(source.tag.id, position.inSeconds);
       }
     }
   }
 
   Future load() async {
-    _log.fine('load');
+    _logger.fine('load');
     _settings = await _feedRepo.getSettings();
     _episodes = await _feedRepo.getEpisodes(
       period: _settings?.retentionPeriod ?? defaultRetentionDays,
@@ -179,6 +180,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Future updateRetentionPeriod(int period) async {
     if (_settings?.id != null) {
+      _logger.fine('updateRetentionPeriod');
       _settings!.retentionPeriod = period;
       await _feedRepo.updateSettings(_settings!.id!, {
         "retention_period": period,
@@ -213,6 +215,7 @@ class HomeViewModel extends ChangeNotifier {
   // }
 
   Future refreshData() async {
+    _logger.fine('refreshData');
     await _feedRepo.refreshData(force: true);
     await load();
   }
