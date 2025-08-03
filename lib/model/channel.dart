@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import '../util/constants.dart';
-// import 'sqlite.dart';
 
 class Channel {
   int? id;
@@ -52,13 +51,12 @@ class Channel {
         author: data['author'],
         imageUrl: data['image'],
         language: data['language'],
-        updated:
-            lastUpdateSec != null && lastUpdateSec is int
-                ? DateTime.fromMillisecondsSinceEpoch(
-                  lastUpdateSec * 1000,
-                  isUtc: true,
-                )
-                : null,
+        updated: lastUpdateSec != null && lastUpdateSec is int
+            ? DateTime.fromMillisecondsSinceEpoch(
+                lastUpdateSec * 1000,
+                isUtc: true,
+              )
+            : null,
         checked: DateTime.now(),
         period: defaultUpdatePeriod,
         categories: data['categories']?.entries
@@ -86,22 +84,20 @@ class Channel {
       description: row['description'] as String?,
       language: row['language'] as String?,
       link: row['link'] as String?,
-      updated:
-          row['updated'] != null
-              ? DateTime.tryParse(row['updated'] as String)
-              : null,
-      published:
-          row['published'] != null
-              ? DateTime.tryParse(row['published'] as String)
-              : null,
-      checked:
-          row['checked'] != null
-              ? DateTime.tryParse(row['checked'] as String)
-              : null,
+      updated: row['updated'] != null
+          ? DateTime.tryParse(row['updated'] as String)
+          : null,
+      published: row['published'] != null
+          ? DateTime.tryParse(row['published'] as String)
+          : null,
+      checked: row['checked'] != null
+          ? DateTime.tryParse(row['checked'] as String)
+          : null,
       period: row['period'] != null ? row['period'] as int : null,
       imageUrl: row['image_url'] as String?,
-      extras:
-          row['extras'] != null ? jsonDecode(row['extras'] as String) : null,
+      extras: row['extras'] != null
+          ? jsonDecode(row['extras'] as String)
+          : null,
     );
   }
 
@@ -131,26 +127,4 @@ class Channel {
             ..remove('subtitle')
             ..remove('description'))
           .toString();
-  /*
-  @override
-  String toString() {
-    return {
-      "id": id,
-      "url": url,
-      "title": title,
-      // "subtitle": subtitle?.substring(0, 20),
-      "author": author,
-      "categories": categories,
-      // "description": description?.substring(0, 20),
-      "language": language,
-      "link": link,
-      "updated": updated?.toIso8601String(),
-      "published": published?.toIso8601String(),
-      "checked": checked?.toIso8601String(),
-      "period": period,
-      "imageUrl": imageUrl,
-      "extras": extras,
-    }.toString();
-  }
-*/
 }

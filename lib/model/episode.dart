@@ -1,11 +1,5 @@
 import 'dart:convert';
 
-// import 'package:just_audio/just_audio.dart';
-// import 'package:just_audio_background/just_audio_background.dart'
-//     show MediaItem;
-
-// import 'sqlite.dart';
-
 class Episode {
   int? id; // db specific: primary key
   String guid;
@@ -77,22 +71,22 @@ class Episode {
       language: row['language'] as String?,
       categories: row['categories'] as String?,
       keywords: row['keywords'] as String?,
-      updated:
-          row['updated'] != null
-              ? DateTime.tryParse(row['updated'] as String)
-              : null,
-      published:
-          row['published'] != null
-              ? DateTime.tryParse(row['published'] as String)
-              : null,
+      updated: row['updated'] != null
+          ? DateTime.tryParse(row['updated'] as String)
+          : null,
+      published: row['published'] != null
+          ? DateTime.tryParse(row['published'] as String)
+          : null,
       link: row['link'] as String?,
       mediaUrl: row['media_url'] as String?,
       mediaType: row['media_type'] as String?,
       mediaSize: row['media_size'] != null ? row['media_size'] as int : null,
-      mediaDuration:
-          row['media_duration'] != null ? row['media_duration'] as int : null,
-      mediaSeekPos:
-          row['media_seek_pos'] != null ? row['media_seek_pos'] as int : null,
+      mediaDuration: row['media_duration'] != null
+          ? row['media_duration'] as int
+          : null,
+      mediaSeekPos: row['media_seek_pos'] != null
+          ? row['media_seek_pos'] as int
+          : null,
       imageUrl: row['image_url'] as String?,
       extras: row['extra'] != null ? jsonDecode(row['extras'] as String) : null,
       channelId: row['channel_id'] != null ? row['channel_id'] as int : null,
