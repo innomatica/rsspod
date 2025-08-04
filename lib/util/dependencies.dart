@@ -1,6 +1,6 @@
 import 'package:just_audio/just_audio.dart';
 import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
+import 'package:provider/single_child_widget.dart' show SingleChildWidget;
 
 import '../data/repository/feed.dart';
 import '../data/service/api/pcindex.dart';
@@ -27,47 +27,45 @@ List<SingleChildWidget> get providers => [
   // repositories
   //
   Provider<FeedRepository>(
-    create:
-        (context) => FeedRepository(
-          dbSrv: context.read<DatabaseService>(),
-          stSrv: context.read<StorageService>(),
-          pcIdx: context.read<PCIndexService>(),
-          player: context.read<AudioPlayer>(),
-        ),
+    create: (context) => FeedRepository(
+      dbSrv: context.read<DatabaseService>(),
+      stSrv: context.read<StorageService>(),
+      pcIdx: context.read<PCIndexService>(),
+      player: context.read<AudioPlayer>(),
+    ),
   ),
   // ui: browser
   ChangeNotifierProvider(
-    create:
-        (context) => BrowserViewModel(feedRepo: context.read<FeedRepository>()),
+    create: (context) =>
+        BrowserViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: channel
   ChangeNotifierProvider(
-    create:
-        (context) => FeedViewModel(feedRepo: context.read<FeedRepository>()),
+    create: (context) =>
+        FeedViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: episode
   ChangeNotifierProvider(
-    create:
-        (context) => EpisodeViewModel(feedRepo: context.read<FeedRepository>()),
+    create: (context) =>
+        EpisodeViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: favorite
   ChangeNotifierProvider(create: (context) => FavoriteViewModel()),
   // ui: follow
   ChangeNotifierProvider(
-    create:
-        (context) => FollowViewModel(feedRepo: context.read<FeedRepository>()),
+    create: (context) =>
+        FollowViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: home
   ChangeNotifierProvider(
-    create:
-        (context) => HomeViewModel(
-          feedRepo: context.read<FeedRepository>(),
-          player: context.read<AudioPlayer>(),
-        ),
+    create: (context) => HomeViewModel(
+      feedRepo: context.read<FeedRepository>(),
+      player: context.read<AudioPlayer>(),
+    ),
   ),
   // ui: search
   ChangeNotifierProvider(
-    create:
-        (context) => SearchViewModel(feedRepo: context.read<FeedRepository>()),
+    create: (context) =>
+        SearchViewModel(feedRepo: context.read<FeedRepository>()),
   ),
 ];
