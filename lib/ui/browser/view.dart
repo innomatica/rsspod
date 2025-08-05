@@ -5,10 +5,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'model.dart';
 
-// const javaScript = '''
-//   let htmlString = window.document.documentElement.innerHTML;
-//   return htmlString;
-// ''';
+const isRSS =
+    "document.contentType === 'application/xml' && "
+    "document.querySelector('rss > channel > title').innerHTML != null &&"
+    "document.querySelector('channel > item > title').innerHTML != null";
 
 class BrowserView extends StatefulWidget {
   final BrowserViewModel model;
@@ -26,23 +26,24 @@ class _BrowserViewState extends State<BrowserView> {
   @override
   void initState() {
     super.initState();
-    _controller =
-        WebViewController()
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..setNavigationDelegate(
-            NavigationDelegate(
-              // onNavigationRequest: (request) async {
-              //   _log.fine('onNavReq: $request');
-              //   widget.model.fetchFeed(request.url);
-              //   return NavigationDecision.navigate;
-              // },
-              onPageFinished: (url) {
-                _log.fine('onPageFin: $url');
-                // FIXME: fetched twice
-                widget.model.fetchFeed(url);
-              },
-            ),
-          );
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          // onNavigationRequest: (request) async {
+          //   _log.fine('onNavReq: $request');
+          //   widget.model.fetchFeed(request.url);
+          //   return NavigationDecision.navigate;
+          // },
+          onPageFinished: (url) async {
+            _log.fine('onPageFin: $url');
+            // FIXME: fetched twice
+            if (await _controller.runJavaScriptReturningResult(isRSS) == true) {
+              widget.model.fetchFeed(url);
+            }
+          },
+        ),
+      );
     // ..loadRequest(Uri.parse(defaultSearchEngineUrl));
     _load();
   }
@@ -83,18 +84,16 @@ class _BrowserViewState extends State<BrowserView> {
             title: Text('Browse to the RSS page'),
           ),
           body: WebViewWidget(controller: _controller),
-          floatingActionButton:
-              widget.model.found
-                  ? FloatingActionButton.extended(
-                    onPressed: () async => await widget.model.subscribe(),
-                    label:
-                        widget.model.subscribed == null
-                            ? Text('Subscribe')
-                            : widget.model.subscribed == true
-                            ? Text('Subscribed')
-                            : Text('Subscription failed'),
-                  )
-                  : null,
+          floatingActionButton: widget.model.found
+              ? FloatingActionButton.extended(
+                  onPressed: () async => await widget.model.subscribe(),
+                  label: widget.model.subscribed == null
+                      ? Text('Subscribe')
+                      : widget.model.subscribed == true
+                      ? Text('Subscribed')
+                      : Text('Subscription failed'),
+                )
+              : null,
         );
       },
     );
