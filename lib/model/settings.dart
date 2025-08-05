@@ -26,10 +26,7 @@ class Settings {
   factory Settings.fromSqlite(Map<String, Object?> row) {
     return Settings(
       id: row['id'] as int,
-      retentionPeriod:
-          row['retention_period'] != null
-              ? row['retention_period'] as int
-              : null,
+      retentionPeriod: row['retention_period'] as int?,
       searchEngineUrl: row['search_engine_url'] as String?,
     );
   }

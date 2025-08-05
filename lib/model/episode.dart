@@ -71,28 +71,20 @@ class Episode {
       language: row['language'] as String?,
       categories: row['categories'] as String?,
       keywords: row['keywords'] as String?,
-      updated: row['updated'] != null
-          ? DateTime.tryParse(row['updated'] as String)
-          : null,
-      published: row['published'] != null
-          ? DateTime.tryParse(row['published'] as String)
-          : null,
+      updated: DateTime.tryParse(row['updated'] as String? ?? ''),
+      published: DateTime.tryParse(row['published'] as String? ?? ''),
       link: row['link'] as String?,
       mediaUrl: row['media_url'] as String?,
       mediaType: row['media_type'] as String?,
-      mediaSize: row['media_size'] != null ? row['media_size'] as int : null,
-      mediaDuration: row['media_duration'] != null
-          ? row['media_duration'] as int
-          : null,
-      mediaSeekPos: row['media_seek_pos'] != null
-          ? row['media_seek_pos'] as int
-          : null,
+      mediaSize: row['media_size'] as int?,
+      mediaDuration: row['media_duration'] as int?,
+      mediaSeekPos: row['media_seek_pos'] as int?,
       imageUrl: row['image_url'] as String?,
-      extras: row['extra'] != null ? jsonDecode(row['extras'] as String) : null,
-      channelId: row['channel_id'] != null ? row['channel_id'] as int : null,
-      downloaded: row['downloaded'] == 1 ? true : false,
-      played: row['played'] == 1 ? true : false,
-      liked: row['liked'] == 1 ? true : false,
+      extras: jsonDecode(row['extras'] as String? ?? "null"),
+      channelId: row['channel_id'] as int?,
+      downloaded: row['downloaded'] == 1,
+      played: row['played'] == 1,
+      liked: row['liked'] == 1,
       // db fields
       channelTitle: row['channel_title'] as String?,
       channelImageUrl: row['channel_image_url'] as String?,

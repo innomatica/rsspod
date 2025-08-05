@@ -84,20 +84,12 @@ class Channel {
       description: row['description'] as String?,
       language: row['language'] as String?,
       link: row['link'] as String?,
-      updated: row['updated'] != null
-          ? DateTime.tryParse(row['updated'] as String)
-          : null,
-      published: row['published'] != null
-          ? DateTime.tryParse(row['published'] as String)
-          : null,
-      checked: row['checked'] != null
-          ? DateTime.tryParse(row['checked'] as String)
-          : null,
-      period: row['period'] != null ? row['period'] as int : null,
+      updated: DateTime.tryParse(row['updated'] as String? ?? ''),
+      published: DateTime.tryParse(row['published'] as String? ?? ''),
+      checked: DateTime.tryParse(row['checked'] as String? ?? ''),
+      period: row['period'] as int?,
       imageUrl: row['image_url'] as String?,
-      extras: row['extras'] != null
-          ? jsonDecode(row['extras'] as String)
-          : null,
+      extras: jsonDecode(row['extras'] as String? ?? "null"),
     );
   }
 
@@ -117,7 +109,7 @@ class Channel {
       "checked": checked?.toIso8601String(),
       "period": period,
       "image_url": imageUrl,
-      "extras": extras != null ? jsonEncode(extras) : null,
+      "extras": jsonEncode(extras),
     };
   }
 
