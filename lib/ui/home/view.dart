@@ -23,6 +23,9 @@ class HomeView extends StatefulWidget {
 
 enum ViewFilter { unplayed, all, downloaded, liked }
 
+// TODO: use extension method to handle next and icon
+// TODO: hide liked
+
 class _HomeViewState extends State<HomeView> {
   // ignore: unused_field
   final _log = Logger('HomeView');
@@ -91,12 +94,8 @@ class _HomeViewState extends State<HomeView> {
     return episodes.isNotEmpty
         ? ListView.separated(
             itemCount: episodes.length,
-            separatorBuilder: (context, _) => Divider(
-              indent: 0,
-              endIndent: 0,
-              height: 0,
-              // color: Theme.of(context).colorScheme.primary,
-            ),
+            separatorBuilder: (context, _) =>
+                Divider(indent: 0, endIndent: 0, height: 0),
             itemBuilder: (context, index) {
               final episode = episodes[index];
               final downloaded = episode.downloaded == true;
