@@ -96,13 +96,12 @@ class FeedRepository {
       // _log.fine('channel:$channel');
       if (channel != null) {
         // download thumbnail
-        if (channel.imageUrl != null) {
-          await _downloadResource(
-            channel.id!,
-            channel.imageUrl!,
-            channelImgFname,
-          );
-        }
+        await _downloadResource(
+          channel.id!,
+          channel.imageUrl ??
+              "https://www.google.com/s2/favicons?domain=${channel.url}&sz=128",
+          channelImgFname,
+        );
         // save episodes
         final refDate = DateTime.now().subtract(
           Duration(days: maxRetentionDays),
