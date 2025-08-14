@@ -33,6 +33,6 @@ class BrowserViewModel extends ChangeNotifier {
 
   Future<String> getSearchEngineUrl() async {
     final settings = await _feedRepo.getSettings();
-    return settings?.searchEngineUrl ?? defaultSearchEngineUrl;
+    return settings?.searchEngineUrl ?? defaultSearchEngine;
   }
 }

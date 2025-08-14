@@ -18,10 +18,12 @@ class DatabaseService {
         _log.fine('onCreate:$db, $version');
         // foreign keys not recognized
         await db.execute(fgkeyPragma);
-        await db.execute(channelSchema);
-        await db.execute(episodeSchema);
-        await db.execute(settingsSchema);
-        await db.execute(defaultSettings);
+        for (final schema in createTablesV1) {
+          await db.execute(schema);
+        }
+        for (final schema in insertTablesV1) {
+          await db.execute(schema);
+        }
       },
     );
   }

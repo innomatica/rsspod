@@ -18,8 +18,8 @@ class Settings {
 
   factory Settings.init() {
     return Settings(
-      retentionPeriod: defaultRetentionDays,
-      searchEngineUrl: defaultSearchEngineUrl,
+      retentionPeriod: defaultDisplayPeriod,
+      searchEngineUrl: defaultSearchEngine,
     );
   }
 

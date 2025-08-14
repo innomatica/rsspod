@@ -5,14 +5,10 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import 'model.dart';
 
-const isRSS =
-    "document.contentType === 'application/xml' && "
-    "document.querySelector('rss > channel > title').innerHTML != null &&"
-    "document.querySelector('channel > item > title').innerHTML != null";
-
 class BrowserView extends StatefulWidget {
+  final String url;
   final BrowserViewModel model;
-  const BrowserView({super.key, required this.model});
+  const BrowserView({super.key, required this.url, required this.model});
 
   @override
   State<BrowserView> createState() => _BrowserViewState();
@@ -36,21 +32,12 @@ class _BrowserViewState extends State<BrowserView> {
           //   return NavigationDecision.navigate;
           // },
           onPageFinished: (url) async {
-            _log.fine('onPageFin: $url');
-            // FIXME: fetched twice
-            if (await _controller.runJavaScriptReturningResult(isRSS) == true) {
-              widget.model.fetchFeed(url);
-            }
+            _log.fine('onPageFinished: $url');
+            widget.model.fetchFeed(url);
           },
         ),
-      );
-    // ..loadRequest(Uri.parse(defaultSearchEngineUrl));
-    _load();
-  }
-
-  Future _load() async {
-    final url = await widget.model.getSearchEngineUrl();
-    _controller.loadRequest(Uri.parse(url));
+      )
+      ..loadRequest(Uri.parse(widget.url));
   }
 
   @override
@@ -66,7 +53,7 @@ class _BrowserViewState extends State<BrowserView> {
                 IconButton(
                   icon: Icon(Icons.keyboard_double_arrow_left_outlined),
                   // onPressed: () => context.pop(),
-                  onPressed: () => context.go('/follow'),
+                  onPressed: () => context.go('/subscribed'),
                 ),
                 IconButton(
                   icon: Icon(Icons.keyboard_arrow_left_rounded),
@@ -74,8 +61,7 @@ class _BrowserViewState extends State<BrowserView> {
                     if (await _controller.canGoBack()) {
                       _controller.goBack();
                     } else {
-                      // ignore: use_build_context_synchronously
-                      context.pop();
+                      if (context.mounted) context.pop();
                     }
                   },
                 ),

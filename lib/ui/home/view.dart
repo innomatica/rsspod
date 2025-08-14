@@ -3,14 +3,46 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../model/episode.dart';
 import '../../util/constants.dart';
 import '../../util/helpers.dart' show secsToHhMmSs, sizeStr, yymmdd;
 import '../../util/miniplayer.dart' show MiniPlayer;
-import '../../util/widgets.dart' show FutureImage;
+import '../../util/widgets.dart' show FutureImage, ChannelImage;
 import 'model.dart';
+
+enum ViewFilter { unplayed, all, downloaded, liked }
+
+extension ViewFilterExt on ViewFilter {
+  IconData get icon {
+    switch (this) {
+      case ViewFilter.unplayed:
+        return Icons.filter_list_rounded;
+      case ViewFilter.all:
+        return Icons.menu_rounded;
+      case ViewFilter.downloaded:
+        return Icons.storage_rounded;
+      case ViewFilter.liked:
+        return Icons.favorite_outline_rounded;
+    }
+  }
+
+  ViewFilter get next {
+    switch (this) {
+      case ViewFilter.unplayed:
+        return ViewFilter.all;
+      case ViewFilter.all:
+        return ViewFilter.downloaded;
+      case ViewFilter.downloaded:
+        // skip liked
+        // return ViewFilter.liked;
+        return ViewFilter.unplayed;
+      case ViewFilter.liked:
+        return ViewFilter.unplayed;
+    }
+  }
+}
 
 class HomeView extends StatefulWidget {
   final HomeViewModel model;
@@ -21,17 +53,11 @@ class HomeView extends StatefulWidget {
   State<HomeView> createState() => _HomeViewState();
 }
 
-enum ViewFilter { unplayed, all, downloaded, liked }
-
-// TODO: use extension method to handle next and icon
-// TODO: hide liked
-
 class _HomeViewState extends State<HomeView> {
   // ignore: unused_field
   final _log = Logger('HomeView');
   int pageIndex = 0;
   ViewFilter filter = ViewFilter.unplayed;
-  final _searchEngine = TextEditingController();
   Timer? sleepTimer;
   int sleepCount = 0;
 
@@ -43,14 +69,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    _searchEngine.dispose();
     super.dispose();
-  }
-
-  void _rotateViewFilter() {
-    int next = (filter.index + 1) % ViewFilter.values.length;
-    filter = ViewFilter.values[next];
-    setState(() {});
   }
 
   void _setSleepTimer() {
@@ -81,16 +100,14 @@ class _HomeViewState extends State<HomeView> {
     setState(() {});
   }
 
-  Future _navigateToChannelPage(Episode episode) async {
-    final url = await widget.model.getChannelUrl(episode.channelId);
-    if (url != null && mounted) {
-      context.go(
-        Uri(path: "/channel", queryParameters: {'url': url}).toString(),
-      );
-    }
-  }
-
-  Widget _buildEpisodeList(List<Episode> episodes) {
+  Widget _buildEpisodeList() {
+    final episodes = filter == ViewFilter.unplayed
+        ? widget.model.unplayed
+        : filter == ViewFilter.downloaded
+        ? widget.model.downloaded
+        : filter == ViewFilter.liked
+        ? widget.model.liked
+        : widget.model.episodes;
     return episodes.isNotEmpty
         ? ListView.separated(
             itemCount: episodes.length,
@@ -100,7 +117,7 @@ class _HomeViewState extends State<HomeView> {
               final episode = episodes[index];
               final downloaded = episode.downloaded == true;
               final played = episode.played == true;
-              final liked = episode.liked == true;
+              // final liked = episode.liked == true;
               return ListTile(
                 selectedColor: Theme.of(context).colorScheme.onPrimary,
                 selectedTileColor: Theme.of(context).colorScheme.primary,
@@ -113,7 +130,23 @@ class _HomeViewState extends State<HomeView> {
                   children: [
                     // channel image
                     GestureDetector(
-                      onTap: () => _navigateToChannelPage(episode),
+                      onTap: () {
+                        context.go(
+                          Uri(
+                            path: "/subscribed/channel",
+                            queryParameters: {'url': episode.channelUrl},
+                          ).toString(),
+                        );
+                      },
+                      // child: ClipRRect(
+                      //   borderRadius: BorderRadiusGeometry.circular(5.0),
+                      //   child: ChannelImage(
+                      //     episode,
+                      //     width: 60,
+                      //     height: 60,
+                      //     opacity: played ? 0.5 : 1.0,
+                      //   ),
+                      // ),
                       child: FutureImage(
                         future: widget.model.getChannelImage(episode),
                         width: 60,
@@ -194,16 +227,16 @@ class _HomeViewState extends State<HomeView> {
                             },
                       visualDensity: VisualDensity.compact,
                     ),
-                    // liked
-                    IconButton(
-                      icon: Icon(
-                        liked
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_outline_rounded,
-                      ),
-                      onPressed: () => widget.model.toggleLiked(episode),
-                      visualDensity: VisualDensity.compact,
-                    ),
+                    // // liked
+                    // IconButton(
+                    //   icon: Icon(
+                    //     liked
+                    //         ? Icons.favorite_rounded
+                    //         : Icons.favorite_outline_rounded,
+                    //   ),
+                    //   onPressed: () => widget.model.toggleLiked(episode),
+                    //   visualDensity: VisualDensity.compact,
+                    // ),
                     // played
                     IconButton(
                       icon: Icon(
@@ -223,14 +256,6 @@ class _HomeViewState extends State<HomeView> {
                           : () => widget.model.addToPlayList(episode),
                       visualDensity: VisualDensity.compact,
                     ),
-                    // // play
-                    // IconButton(
-                    //   icon: Icon(Icons.headphones_rounded),
-                    //   onPressed: played
-                    //       ? null
-                    //       : () => widget.model.playEpisode(episode),
-                    //   visualDensity: VisualDensity.compact,
-                    // ),
                   ],
                 ),
                 onTap: played ? null : () => widget.model.playEpisode(episode),
@@ -247,93 +272,10 @@ class _HomeViewState extends State<HomeView> {
           )
         : Center(
             child: IconButton(
-              icon: Image.asset(defaultChannelImage, width: 200, height: 200),
-              onPressed: () => context.go('/follow'),
+              icon: Image.asset(assetImageRecording, width: 200, height: 200),
+              onPressed: () => context.go('/subscribed'),
             ),
           );
-  }
-
-  Widget _buildDrawer() {
-    // _log.fine('buildDrawer.settings:${widget.model.settings}');
-    // final days = daysAgo(widget.model.settings?.lastUpdate);
-    int retentionPeriod =
-        widget.model.settings?.retentionPeriod ?? defaultRetentionDays;
-    _searchEngine.text = widget.model.settings?.searchEngineUrl ?? '';
-    return Drawer(
-      child: ListView(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            child: Text(
-              'Settings',
-              style: TextStyle(
-                fontSize: 24,
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
-            ),
-          ),
-          ListTile(
-            title: Text("Episode retention period"),
-            subtitle: Row(
-              children: [
-                Text('keep episodes up to'),
-                SizedBox(width: 8),
-                DropdownButton<int>(
-                  value: retentionPeriod,
-                  items: retentionDays
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e.toString()),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) async {
-                    if (value != null) {
-                      retentionPeriod = value;
-                      await widget.model.updateRetentionPeriod(value);
-                    }
-                  },
-                ),
-                SizedBox(width: 4),
-                Text('days'),
-              ],
-            ),
-          ),
-          ListTile(
-            title: Text('Search engine'),
-            subtitle: TextField(
-              controller: _searchEngine,
-              onSubmitted: (value) async {
-                _log.fine(value);
-                await widget.model.updateSearchEngine(value);
-              },
-            ),
-          ),
-          // ListTile(
-          //   title: Text('Last update'),
-          //   subtitle: Text('$days day(s) ago'),
-          // ),
-          ListTile(
-            title: Text('Source code repository'),
-            subtitle: Text('github'),
-            onTap: () => launchUrl(Uri.parse(sourceRepository)),
-          ),
-          ListTile(
-            title: Text('App version'),
-            subtitle: Text(appVersion),
-            onTap: () => launchUrl(Uri.parse(sourceRepository)),
-          ),
-          ListTile(
-            title: Text('Developer'),
-            subtitle: Text('innomatic'),
-            onTap: () => launchUrl(Uri.parse(developerWebsite)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -355,41 +297,143 @@ class _HomeViewState extends State<HomeView> {
               ),
               // episode filter
               IconButton(
-                onPressed: () => _rotateViewFilter(),
-                icon: Icon(
-                  filter == ViewFilter.unplayed
-                      ? Icons.filter_list_rounded
-                      : filter == ViewFilter.downloaded
-                      ? Icons.storage_rounded
-                      : filter == ViewFilter.liked
-                      ? Icons.favorite_outline_rounded
-                      : Icons.menu_rounded,
-                ),
+                onPressed: () => setState(() => filter = filter.next),
+                icon: Icon(filter.icon),
               ),
               // subscriptions
               IconButton(
-                onPressed: () => context.go('/follow'),
+                onPressed: () => context.go('/subscribed'),
                 icon: Icon(Icons.subscriptions_rounded),
               ),
             ],
           ),
           body: RefreshIndicator(
             onRefresh: widget.model.refreshData,
-            child: _buildEpisodeList(
-              filter == ViewFilter.unplayed
-                  ? widget.model.unplayed
-                  : filter == ViewFilter.downloaded
-                  ? widget.model.downloaded
-                  : filter == ViewFilter.liked
-                  ? widget.model.liked
-                  : widget.model.episodes,
-            ),
+            child: _buildEpisodeList(),
           ),
-          drawer: _buildDrawer(),
+          drawer: SideBar(model: widget.model),
           // https://github.com/flutter/flutter/issues/50314
           bottomNavigationBar: MiniPlayer(),
         );
       },
+    );
+  }
+}
+
+class SideBar extends StatefulWidget {
+  final HomeViewModel model;
+  const SideBar({super.key, required this.model});
+
+  @override
+  State<SideBar> createState() => _SideBarState();
+}
+
+class _SideBarState extends State<SideBar> {
+  int displayPeriod = defaultDisplayPeriod;
+  String searchEngine = defaultSearchEngine;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  @override
+  dispose() {
+    super.dispose();
+    _dispose();
+  }
+
+  Future _init() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      displayPeriod = prefs.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
+    });
+  }
+
+  Future _dispose() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(pKeyDisplayPeriod, displayPeriod);
+    // await prefs.setString(pKeySearchEngine, searchEngine);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: Text(
+              'Settings',
+              style: TextStyle(
+                fontSize: 24,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+            ),
+          ),
+          ListTile(
+            title: Text("Episode display period"),
+            subtitle: Row(
+              children: [
+                Text('show episodes back to'),
+                SizedBox(width: 8),
+                DropdownButton<int>(
+                  value: displayPeriod,
+                  underline: SizedBox(),
+                  items: displayPeriods.map((e) {
+                    return DropdownMenuItem(
+                      value: e,
+                      child: Text(e.toString()),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      displayPeriod = value ?? displayPeriod;
+                    });
+                  },
+                ),
+                SizedBox(width: 4),
+                Text('days'),
+              ],
+            ),
+          ),
+          Divider(indent: 16, endIndent: 16),
+          ListTile(
+            title: Text('Source code repository'),
+            subtitle: Text('github'),
+            onTap: () => launchUrl(Uri.parse(sourceRepository)),
+          ),
+          ListTile(
+            title: Text('App version'),
+            subtitle: Text(appVersion),
+            onTap: () => launchUrl(Uri.parse(sourceRepository)),
+          ),
+          ListTile(
+            title: Text('Developer'),
+            subtitle: Text('innomatic'),
+            onTap: () => launchUrl(Uri.parse(developerWebsite)),
+          ),
+          ListTile(
+            title: Text('Attributions'),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextButton(
+                  child: Text('Podcast Index Search Engine'),
+                  onPressed: () => launchUrl(Uri.parse(pcIdxUrl)),
+                ),
+                TextButton(
+                  child: Text('Microphone icons by Freepik'),
+                  onPressed: () => launchUrl(Uri.parse(micIconUrl)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

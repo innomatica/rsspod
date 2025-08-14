@@ -4,11 +4,12 @@ import 'package:logging/logging.dart';
 import '../../data/repository/feed.dart';
 import '../../model/channel.dart';
 
-class FollowViewModel extends ChangeNotifier {
+class SubscribedViewModel extends ChangeNotifier {
   final FeedRepository _feedRepo;
-  FollowViewModel({required FeedRepository feedRepo}) : _feedRepo = feedRepo;
+  SubscribedViewModel({required FeedRepository feedRepo})
+    : _feedRepo = feedRepo;
 
-  final _log = Logger('FollowViewModel');
+  final _log = Logger('SubscribedViewModel');
 
   List<Channel> _channels = [];
 

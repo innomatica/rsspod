@@ -4,16 +4,15 @@ import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 
 import '../../model/feed.dart';
-import '../../util/constants.dart';
 import '../../util/helpers.dart';
 import '../../util/widgets.dart';
 import 'model.dart';
 
-class FeedView extends StatelessWidget {
-  final FeedViewModel model;
-  FeedView({super.key, required this.model});
+class ChannelView extends StatelessWidget {
+  final ChannelViewModel model;
+  ChannelView({super.key, required this.model});
   // ignore: unused_field
-  final _log = Logger('FeedView');
+  final _log = Logger('ChannelView');
 
   Widget _buildError(String error) {
     return Center(child: Text(error));
@@ -108,34 +107,32 @@ class FeedView extends StatelessWidget {
             Text(daysAgo(data.channel.checked)),
           ],
         ),
-        // period
-        Row(
-          spacing: 6,
-          children: [
-            Text('update period', style: infoStyle),
-            DropdownButton<int>(
-              isDense: true,
-              elevation: 0,
-              value: model.feed?.channel.period ?? defaultUpdatePeriod,
-              items:
-                  updatePeriods
-                      .map(
-                        (e) => DropdownMenuItem<int>(
-                          value: e,
-                          onTap: () {},
-                          child: Text('$e d'),
-                        ),
-                      )
-                      .toList(),
-              onChanged: (value) async {
-                if (value != null) {
-                  await model.updatePeriod(value);
-                }
-              },
-            ),
-            // Text('day', style: infoStyle),
-          ],
-        ),
+        // // update period
+        // Row(
+        //   spacing: 6,
+        //   children: [
+        //     Text('update period', style: infoStyle),
+        //     DropdownButton<int>(
+        //       isDense: true,
+        //       elevation: 0,
+        //       value: model.feed?.channel.period ?? defaultUpdatePeriod,
+        //       items: updatePeriods
+        //           .map(
+        //             (e) => DropdownMenuItem<int>(
+        //               value: e,
+        //               onTap: () {},
+        //               child: Text('$e d'),
+        //             ),
+        //           )
+        //           .toList(),
+        //       onChanged: (value) async {
+        //         if (value != null) {
+        //           await model.updatePeriod(value);
+        //         }
+        //       },
+        //     ),
+        //   ],
+        // ),
         SizedBox(height: 8),
         Text(removeTags(data.channel.description)),
         // Text(data.channel.language ?? 'language null'),
@@ -169,38 +166,41 @@ class FeedView extends StatelessWidget {
           appBar: AppBar(
             leading: IconButton(
               icon: Icon(Icons.arrow_back_ios_rounded),
-              // onPressed: () => context.pop(),
-              onPressed: () => context.go('/follow'),
+              onPressed: () => context.pop(),
+              // onPressed: () => context.go('/subscribed'),
             ),
             title: Text("Channel"),
             actions: [
               model.subscribed
                   ? TextButton.icon(
-                    label: Text(
-                      'unsubscribe',
-                      style: TextStyle(color: unsubColor),
-                    ),
-                    icon: Icon(
-                      Icons.unsubscribe_rounded,
-                      size: 20,
-                      color: unsubColor,
-                    ),
-                    onPressed: () async {
-                      await model.unsubscribe();
-                      if (context.mounted) {
-                        context.go('/follow');
-                      }
-                    },
-                  )
+                      label: Text(
+                        'unsubscribe',
+                        style: TextStyle(color: unsubColor),
+                      ),
+                      icon: Icon(
+                        Icons.unsubscribe_rounded,
+                        size: 20,
+                        color: unsubColor,
+                      ),
+                      onPressed: () async {
+                        await model.unsubscribe();
+                        if (context.mounted) {
+                          context.go('/subscribed');
+                        }
+                      },
+                    )
                   : TextButton.icon(
-                    label: Text('subscribe', style: TextStyle(color: subColor)),
-                    icon: Icon(
-                      Icons.subscriptions_rounded,
-                      size: 20,
-                      color: subColor,
+                      label: Text(
+                        'subscribe',
+                        style: TextStyle(color: subColor),
+                      ),
+                      icon: Icon(
+                        Icons.subscriptions_rounded,
+                        size: 20,
+                        color: subColor,
+                      ),
+                      onPressed: () async => await model.subscribe(),
                     ),
-                    onPressed: () async => await model.subscribe(),
-                  ),
               IconButton(
                 icon: Icon(Icons.content_copy_rounded),
                 onPressed: () {
@@ -222,18 +222,17 @@ class FeedView extends StatelessWidget {
             child: RefreshIndicator(
               onRefresh: model.refreshChannel,
               child: SingleChildScrollView(
-                child:
-                    model.feed != null
-                        ? _buildFeedInfo(model.feed!, context)
-                        : model.error != null
-                        ? _buildError(model.error!)
-                        : const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(),
-                          ),
+                child: model.feed != null
+                    ? _buildFeedInfo(model.feed!, context)
+                    : model.error != null
+                    ? _buildError(model.error!)
+                    : const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(),
                         ),
+                      ),
               ),
             ),
           ),

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
@@ -41,10 +39,6 @@ class MiniPlayer extends StatelessWidget {
                             showModalBottomSheet(
                               context: context,
                               builder: (context) => ModalPlayer(),
-                            );
-                            Timer(
-                              const Duration(seconds: 20),
-                              () => Navigator.pop(context),
                             );
                           },
                           child: Text(

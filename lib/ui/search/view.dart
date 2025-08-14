@@ -17,7 +17,7 @@ class SearchView extends StatelessWidget {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_rounded),
           // onPressed: () => context.pop(),
-          onPressed: () => context.go('/follow'),
+          onPressed: () => context.go('/subscribed'),
         ),
         title: Text('Podcast Index Search'),
       ),
@@ -31,13 +31,11 @@ class SearchView extends StatelessWidget {
             child: SingleChildScrollView(
               child: ListenableBuilder(
                 listenable: model,
-                builder:
-                    (context, _) => Column(
-                      children:
-                          model.channels
-                              .map((e) => ChannelTile(channel: e))
-                              .toList(),
-                    ),
+                builder: (context, _) => Column(
+                  children: model.channels
+                      .map((e) => ChannelTile(channel: e))
+                      .toList(),
+                ),
               ),
             ),
           ),
@@ -77,42 +75,38 @@ class _SearchBoxState extends State<SearchBox> {
           childFocusNode: _buttonFocusNode,
           menuChildren: [
             MenuItemButton(
-              onPressed:
-                  () => widget.model.search(
-                    PCIndexSearch.byTerm,
-                    _kwdController.text,
-                  ),
+              onPressed: () => widget.model.search(
+                PCIndexSearch.byTerm,
+                _kwdController.text,
+              ),
               child: const Text('by Term'),
             ),
             MenuItemButton(
-              onPressed:
-                  () => widget.model.search(
-                    PCIndexSearch.byTerm,
-                    _kwdController.text,
-                  ),
+              onPressed: () => widget.model.search(
+                PCIndexSearch.byTerm,
+                _kwdController.text,
+              ),
               child: const Text('by Title'),
             ),
             MenuItemButton(
-              onPressed:
-                  () => widget.model.search(
-                    PCIndexSearch.byCategories,
-                    _kwdController.text,
-                  ),
+              onPressed: () => widget.model.search(
+                PCIndexSearch.byCategories,
+                _kwdController.text,
+              ),
               child: const Text('by Category'),
             ),
           ],
-          builder:
-              (_, controller, child) => IconButton(
-                focusNode: _buttonFocusNode,
-                icon: Icon(Icons.keyboard_arrow_down_rounded),
-                onPressed: () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                },
-              ),
+          builder: (_, controller, child) => IconButton(
+            focusNode: _buttonFocusNode,
+            icon: Icon(Icons.keyboard_arrow_down_rounded),
+            onPressed: () {
+              if (controller.isOpen) {
+                controller.close();
+              } else {
+                controller.open();
+              }
+            },
+          ),
         ),
       ),
     );
@@ -139,7 +133,7 @@ class ChannelTile extends StatelessWidget {
       onTap: () {
         context.go(
           Uri(
-            path: '/channel',
+            path: '/subscribed/channel',
             queryParameters: {'url': channel.url},
           ).toString(),
         );

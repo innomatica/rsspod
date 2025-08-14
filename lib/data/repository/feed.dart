@@ -1,11 +1,12 @@
-import 'dart:convert';
+import 'dart:convert' show utf8;
 
 import 'package:flutter/material.dart';
+import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart'
     show MediaItem;
-import 'package:logging/logging.dart';
+import 'package:logging/logging.dart' show Logger;
 import 'package:xml/xml.dart';
 
 import '../../model/channel.dart';
@@ -35,7 +36,8 @@ class FeedRepository {
        _pcIdx = pcIdx,
        _player = player;
 
-  final _log = Logger('FeedRespository');
+  final _unesc = HtmlUnescape();
+  final _logger = Logger('FeedRespository');
 
   AudioPlayer get player => _player;
 
@@ -51,11 +53,13 @@ class FeedRepository {
   Future<Feed?> fetchFeed(String url) async {
     // for testing replace url here
     // url = 'https://feeds.simplecast.com/EmVW7VGp'; // radiolab
-    // _log.fine('fetch-url:$url');
     try {
       final res = await http.get(Uri.parse(url));
-      if (res.statusCode == 200) {
-        final document = XmlDocument.parse(utf8.decode(res.bodyBytes));
+      if (res.statusCode == 200 &&
+          res.headers['content-type']?.contains("xml") == true) {
+        final document = XmlDocument.parse(
+          _unesc.convert(utf8.decode(res.bodyBytes)),
+        );
         // first children
         final children = document.childElements;
         if (children.isNotEmpty) {
@@ -66,19 +70,20 @@ class FeedRepository {
           } else if (root.name.toString() == 'feed') {
             return Feed.fromAtom(root, url);
           }
+          _logger.severe('unknown feed format');
           // throw Exception('unknown feed format');
-          _log.severe('unknown feed format');
         }
+      } else {
+        _logger.fine('${res.statusCode}: ${res.headers['content-type']}');
       }
-      _log.severe('{res.statusCode} encountered');
-      // throw Exception('{res.statusCode} encountered');
     } catch (e) {
-      _log.severe(e.toString);
+      _logger.severe(e.toString);
       // throw Exception(e.toString);
     }
     return null;
   }
 
+  // FIXME: not intuitive naming
   Future<Feed?> getFeed(String url) async {
     final channel = await getChannelByUrl(url);
     if (channel != null) {
@@ -89,7 +94,7 @@ class FeedRepository {
   }
 
   Future<bool> subscribe(Feed feed) async {
-    _log.fine('subscrib');
+    _logger.fine('subscrib');
     if (await createChannel(feed.channel) > 0) {
       // read back
       final channel = await getChannelByUrl(feed.channel.url);
@@ -104,12 +109,12 @@ class FeedRepository {
         );
         // save episodes
         final refDate = DateTime.now().subtract(
-          Duration(days: maxRetentionDays),
+          Duration(days: dataRetentionPeriod),
         );
         for (final episode in feed.episodes) {
           // _log.fine('episode:$episode');
           // save only up to maxRetentionDays ago
-          if (episode.published?.isBefore(refDate) != true) {
+          if (episode.published.isBefore(refDate) != true) {
             episode.channelId = channel.id;
             await createEpisode(episode);
           }
@@ -121,14 +126,14 @@ class FeedRepository {
   }
 
   Future unsubscribe(int channelId) async {
-    _log.fine('unsubscribe');
+    _logger.fine('unsubscribe');
     await deleteChannel(channelId);
   }
 
   // Data
 
   Future refreshData({bool force = false}) async {
-    _log.fine('refreshData: $force');
+    _logger.fine('refreshData: $force');
     final channels = await getChannels();
     for (final channel in channels) {
       final today = DateTime.now();
@@ -149,14 +154,14 @@ class FeedRepository {
             ),
           );
       if (force || (pubBeforePeriod && chkBeforePeriod)) {
-        _log.fine('pub:${channel.published}, chk:${channel.checked}');
+        _logger.fine('pub:${channel.published}, chk:${channel.checked}');
         await refreshChannel(channel);
       }
     }
   }
 
   Future<bool> refreshChannel(Channel channel) async {
-    _log.fine('refreshChannel: ${channel.id}');
+    _logger.fine('refreshChannel: ${channel.id}');
     final feed = await fetchFeed(channel.url);
     if (channel.id != null && feed != null) {
       // set channel id
@@ -166,13 +171,15 @@ class FeedRepository {
         "checked": DateTime.now().toIso8601String(),
       });
       // reference date
-      final refDate = DateTime.now().subtract(Duration(days: maxRetentionDays));
+      final refDate = DateTime.now().subtract(
+        Duration(days: dataRetentionPeriod),
+      );
       for (final episode in feed.episodes) {
         // inject channel id field
         episode.channelId = channel.id;
         // _log.fine('episode:${episode.guid}.${episode.published}');
         // update only back to reference date
-        if (episode.published?.isBefore(refDate) != true) {
+        if (episode.published.isBefore(refDate) != true) {
           // _log.fine('create:${episode.title}');
           await refreshEpisode(episode);
         }
@@ -285,14 +292,14 @@ class FeedRepository {
   Future purgeChannel(int? channelId) async {
     try {
       if (channelId != null) {
-        _log.fine('purgeChannel');
+        _logger.fine('purgeChannel');
         final episodes = await getEpisodesByChannel(channelId);
         final refDate = DateTime.now().subtract(
-          Duration(days: maxRetentionDays),
+          Duration(days: dataRetentionPeriod),
         );
         for (final episode in episodes) {
           // delete expired episodes and its local media data
-          if (episode.published?.isBefore(refDate) == true) {
+          if (episode.published.isBefore(refDate) == true) {
             await deleteEpisode(episode.guid);
             await _stSrv.deleteFile(channelId, episode.mediaFname);
             if (episode.imageFname != null) {
@@ -310,6 +317,39 @@ class FeedRepository {
     }
   }
 
+  Future<List<Episode>> fetchEpisodesByChannel(Channel channel) async {
+    final episodes = <Episode>[];
+    final feed = await fetchFeed(channel.url);
+    if (feed != null) {
+      for (final episode in feed.episodes) {
+        episode.channelId = channel.id;
+        episode.channelTitle = channel.title;
+        episode.channelImageUrl = channel.imageUrl;
+      }
+      episodes.addAll(feed.episodes);
+    }
+    return episodes;
+  }
+
+  Future<List<Episode>> fetchEpisodes() async {
+    final episodes = <Episode>[];
+    final rows = await _dbSrv.queryAll("SELECT * FROM channels");
+    final channels = rows.map((e) => Channel.fromSqlite(e)).toList();
+    for (final channel in channels) {
+      final feed = await fetchFeed(channel.url);
+      if (feed != null) {
+        for (final episode in feed.episodes) {
+          episode.channelId = channel.id;
+          episode.channelUrl = channel.url;
+          episode.channelTitle = channel.title;
+          episode.channelImageUrl = channel.imageUrl;
+        }
+        episodes.addAll(feed.episodes);
+      }
+    }
+    return episodes;
+  }
+
   // Episode
 
   Future<List<Episode>> getEpisodes({
@@ -322,7 +362,8 @@ class FeedRepository {
       final rows = await _dbSrv.queryAll(
         """
       SELECT episodes.*, channels.title as channel_title, 
-        channels.image_url as channel_image_url 
+        channels.image_url as channel_image_url,
+        channels.url as channel_url
       FROM episodes 
       INNER JOIN channels ON channels.id=episodes.channel_id
       WHERE DATE(episodes.published) > ?
@@ -344,7 +385,8 @@ class FeedRepository {
       final rows = await _dbSrv.queryAll(
         """
       SELECT episodes.*, channels.title as channel_title, 
-        channels.image_url as channel_image_url 
+        channels.image_url as channel_image_url,
+        channels.url as channel_url
       FROM episodes 
       INNER JOIN channels ON channels.id=episodes.channel_id
       WHERE channel_id = ? 
@@ -520,7 +562,7 @@ class FeedRepository {
     final req = http.Request('GET', Uri.parse(url));
     final res = await client.send(req);
     if (res.statusCode == 200) {
-      _log.fine('downloading: $url to $fname');
+      _logger.fine('downloading: $url to $fname');
       final file = await _stSrv.getFile(channelId, fname);
       if (file != null) {
         await file.create(recursive: true);
@@ -577,7 +619,7 @@ class FeedRepository {
         return NetworkImage(Uri.parse(episode.imageUrl!).toString());
       }
     }
-    return AssetImage(defaultEpisodeImage);
+    return AssetImage(assetImagePodcaster);
   }
 
   Future<ImageProvider> getChannelImage(dynamic chnOrEps) async {
@@ -589,7 +631,7 @@ class FeedRepository {
         ? FileImage(file) // thumbnail found in the local
         : chnOrEps.imageUrl != null
         ? NetworkImage(chnOrEps.imageUrl.toString()) // has valid imageUrl
-        : AssetImage(defaultChannelImage); // fallback image
+        : AssetImage(assetImageRecording); // fallback image
   }
 
   Future<bool> downloadEpisode(Episode episode) async {
@@ -647,19 +689,19 @@ class FeedRepository {
   }
 
   Future playEpisode(Episode episode) async {
-    _log.fine('requested: ${episode.guid}');
-    _log.fine(
+    _logger.fine('requested: ${episode.guid}');
+    _logger.fine(
       'current:${(_player.audioSource as IndexedAudioSource?)?.tag.id}',
     );
     if ((_player.audioSource as IndexedAudioSource?)?.tag.id == episode.guid) {
-      _log.fine('current episode: do toggle playing');
+      _logger.fine('current episode: do toggle playing');
       _player.playing ? await _player.pause() : await _player.play();
     } else {
-      _log.fine('new episode');
+      _logger.fine('new episode');
       final audioSource = await getAudioSource(episode);
       // final audioSource = episode.toAudioSource();
       if (audioSource != null) {
-        _log.fine('audioSource:${audioSource.tag}');
+        _logger.fine('audioSource:${audioSource.tag}');
         await _player.stop();
         await _player.setAudioSource(audioSource);
         await _player.seek(Duration(seconds: episode.mediaSeekPos ?? 0));
@@ -672,7 +714,7 @@ class FeedRepository {
     final audioSource = await getAudioSource(episode);
     // final audioSource = episode.toAudioSource();
     if (audioSource != null) {
-      _log.fine('audioSource:${audioSource.tag}');
+      _logger.fine('audioSource:${audioSource.tag}');
       // just_audio version 0.10 specific
       await _player.addAudioSource(audioSource);
     }

@@ -14,17 +14,18 @@ class FavoriteView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios_outlined),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go("/subscribed"),
         ),
-        title: Text('Starter Pack'),
+        title: Text('RssPod Favorites'),
       ),
       body: ListenableBuilder(
         listenable: model,
         builder: (context, _) {
           return SingleChildScrollView(
             child: Column(
-              children:
-                  model.items.map((e) => FavoriteTile(channel: e)).toList(),
+              children: model.items
+                  .map((e) => FavoriteTile(channel: e))
+                  .toList(),
             ),
           );
         },
@@ -67,7 +68,7 @@ class FavoriteTile extends StatelessWidget {
       onTap: () {
         context.go(
           Uri(
-            path: "/channel",
+            path: "/subscribed/channel",
             queryParameters: {"url": channel.url},
           ).toString(),
         );

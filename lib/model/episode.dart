@@ -11,7 +11,7 @@ class Episode {
   String? categories;
   String? keywords;
   DateTime? updated;
-  DateTime? published;
+  DateTime published;
   String? link;
   String? mediaUrl;
   String? mediaType;
@@ -20,12 +20,16 @@ class Episode {
   int? mediaSeekPos;
   String? imageUrl;
   Map<String, dynamic>? extras;
-  int? channelId;
+  // internal use
   bool? downloaded;
   bool? played;
   bool? liked;
-  String? channelTitle; // db field
-  String? channelImageUrl; // db field
+  // filled after channel save
+  int? channelId;
+  // db fields
+  String? channelUrl;
+  String? channelTitle;
+  String? channelImageUrl;
 
   Episode({
     this.id,
@@ -38,7 +42,7 @@ class Episode {
     this.categories,
     this.keywords,
     this.updated,
-    this.published,
+    required this.published,
     this.link,
     this.mediaUrl,
     this.mediaType,
@@ -47,10 +51,12 @@ class Episode {
     this.mediaSeekPos,
     this.imageUrl,
     this.extras,
-    this.channelId,
     this.downloaded,
     this.played,
     this.liked,
+    // db fields
+    this.channelId,
+    this.channelUrl,
     this.channelTitle,
     this.channelImageUrl,
   });
@@ -72,7 +78,9 @@ class Episode {
       categories: row['categories'] as String?,
       keywords: row['keywords'] as String?,
       updated: DateTime.tryParse(row['updated'] as String? ?? ''),
-      published: DateTime.tryParse(row['published'] as String? ?? ''),
+      published:
+          DateTime.tryParse(row['published'] as String? ?? '') ??
+          DateTime.now(),
       link: row['link'] as String?,
       mediaUrl: row['media_url'] as String?,
       mediaType: row['media_type'] as String?,
@@ -81,11 +89,12 @@ class Episode {
       mediaSeekPos: row['media_seek_pos'] as int?,
       imageUrl: row['image_url'] as String?,
       extras: jsonDecode(row['extras'] as String? ?? "null"),
-      channelId: row['channel_id'] as int?,
       downloaded: row['downloaded'] == 1,
       played: row['played'] == 1,
       liked: row['liked'] == 1,
       // db fields
+      channelId: row['channel_id'] as int?,
+      channelUrl: row['channel_url'] as String?,
       channelTitle: row['channel_title'] as String?,
       channelImageUrl: row['channel_image_url'] as String?,
     );
@@ -103,7 +112,7 @@ class Episode {
       "categories": categories,
       "keywords": keywords,
       "updated": updated?.toIso8601String(),
-      "published": published?.toIso8601String(),
+      "published": published.toIso8601String(),
       "link": link,
       "media_url": mediaUrl,
       "media_type": mediaType,
@@ -112,10 +121,10 @@ class Episode {
       "media_seek_pos": mediaSeekPos,
       "image_url": imageUrl,
       "extras": jsonEncode(extras),
-      "channel_id": channelId,
       "downloaded": downloaded == true ? 1 : 0,
       "played": played == true ? 1 : 0,
       "liked": liked == true ? 1 : 0,
+      "channel_id": channelId,
     };
   }
 

@@ -116,11 +116,24 @@ class HomeViewModel extends ChangeNotifier {
 
   Future load() async {
     _logger.fine('load');
-    _settings = await _feedRepo.getSettings();
+    // _settings = await _feedRepo.getSettings();
+    // _episodes.clear();
+
     _episodes = await _feedRepo.getEpisodes(
-      period: _settings?.retentionPeriod ?? defaultRetentionDays,
+      period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
     );
     notifyListeners();
+
+    /*
+    final refDate = DateTime.now().subtract(Duration(days: 14));
+    final channels = await _feedRepo.getChannels();
+    for (final channel in channels) {
+      final episodes = await _feedRepo.fetchEpisodesByChannel(channel);
+      _episodes.addAll(episodes.where((e) => e.published.isAfter(refDate)));
+      _episodes.sort((a, b) => b.published.compareTo(a.published));
+      notifyListeners();
+    }
+    */
   }
 
   Future<ImageProvider> getChannelImage(Episode episode) async {
@@ -150,7 +163,7 @@ class HomeViewModel extends ChangeNotifier {
         // }
       }
       _episodes = await _feedRepo.getEpisodes(
-        period: _settings?.retentionPeriod ?? defaultRetentionDays,
+        period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
       );
       notifyListeners();
     }
@@ -164,7 +177,7 @@ class HomeViewModel extends ChangeNotifier {
         await _feedRepo.setLiked(episode.guid);
       }
       _episodes = await _feedRepo.getEpisodes(
-        period: _settings?.retentionPeriod ?? defaultRetentionDays,
+        period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
       );
       notifyListeners();
     }
@@ -173,31 +186,9 @@ class HomeViewModel extends ChangeNotifier {
   Future downloadEpisode(Episode episode) async {
     await _feedRepo.downloadEpisode(episode);
     _episodes = await _feedRepo.getEpisodes(
-      period: _settings?.retentionPeriod ?? defaultRetentionDays,
+      period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
     );
     notifyListeners();
-  }
-
-  Future updateRetentionPeriod(int period) async {
-    if (_settings?.id != null) {
-      _logger.fine('updateRetentionPeriod');
-      _settings!.retentionPeriod = period;
-      await _feedRepo.updateSettings(_settings!.id!, {
-        "retention_period": period,
-      });
-      await load();
-    }
-  }
-
-  Future updateSearchEngine(String url) async {
-    if (_settings?.id != null) {
-      _settings!.searchEngineUrl = url;
-      await _feedRepo.updateSettings(_settings!.id!, {
-        "search_engine_url": url,
-      });
-      _settings = await _feedRepo.getSettings();
-      notifyListeners();
-    }
   }
 
   Future<String?> getChannelUrl(int? id) async {
@@ -207,12 +198,6 @@ class HomeViewModel extends ChangeNotifier {
     }
     return null;
   }
-
-  // Future updateSettings() async {
-  //   if (_settings?.id != null) {
-  //     await _feedRepo.updateSettings(_settings!);
-  //   }
-  // }
 
   Future refreshData() async {
     _logger.fine('refreshData');

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart' show Logger;
+import 'package:rsspod/util/constants.dart' show assetImagePodcaster;
+
+import '../model/channel.dart';
+import '../model/episode.dart';
 
 const defaultImageSize = 100.0;
 
@@ -38,6 +43,61 @@ class FutureImage extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+class ChannelImage extends StatelessWidget {
+  final dynamic item;
+  final double? width;
+  final double? height;
+  final double? opacity;
+  ChannelImage(
+    this.item, {
+    super.key,
+    // required this.item,
+    this.width,
+    this.height,
+    this.opacity,
+  });
+
+  final _logger = Logger("ChannelImage");
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      return item is Channel && item.imageUrl != null
+          ? Image.network(
+              item.imageUrl!,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+            )
+          : item is Episode && item.channelImageUrl != null
+          ? Image.network(
+              item.channelImageUrl!,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+            )
+          : Image.asset(
+              assetImagePodcaster,
+              width: width,
+              height: height,
+              fit: BoxFit.cover,
+              opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+            );
+    } catch (e) {
+      _logger.warning(e.toString());
+      return Image.asset(
+        assetImagePodcaster,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+      );
+    }
   }
 }
 

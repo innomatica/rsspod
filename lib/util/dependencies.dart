@@ -10,7 +10,7 @@ import '../ui/browser/model.dart';
 import '../ui/episode/model.dart';
 import '../ui/channel/model.dart';
 import '../ui/favorite/model.dart';
-import '../ui/follow/model.dart';
+import '../ui/subscribed/model.dart';
 import '../ui/home/model.dart';
 import '../ui/search/model.dart';
 
@@ -27,12 +27,14 @@ List<SingleChildWidget> get providers => [
   // repositories
   //
   Provider<FeedRepository>(
-    create: (context) => FeedRepository(
-      dbSrv: context.read<DatabaseService>(),
-      stSrv: context.read<StorageService>(),
-      pcIdx: context.read<PCIndexService>(),
-      player: context.read<AudioPlayer>(),
-    ),
+    create: (context) {
+      return FeedRepository(
+        dbSrv: context.read<DatabaseService>(),
+        stSrv: context.read<StorageService>(),
+        pcIdx: context.read<PCIndexService>(),
+        player: context.read<AudioPlayer>(),
+      );
+    },
   ),
   // ui: browser
   ChangeNotifierProvider(
@@ -42,7 +44,7 @@ List<SingleChildWidget> get providers => [
   // ui: channel
   ChangeNotifierProvider(
     create: (context) =>
-        FeedViewModel(feedRepo: context.read<FeedRepository>()),
+        ChannelViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: episode
   ChangeNotifierProvider(
@@ -51,17 +53,19 @@ List<SingleChildWidget> get providers => [
   ),
   // ui: favorite
   ChangeNotifierProvider(create: (context) => FavoriteViewModel()),
-  // ui: follow
+  // ui: subscribed
   ChangeNotifierProvider(
     create: (context) =>
-        FollowViewModel(feedRepo: context.read<FeedRepository>()),
+        SubscribedViewModel(feedRepo: context.read<FeedRepository>()),
   ),
   // ui: home
   ChangeNotifierProvider(
-    create: (context) => HomeViewModel(
-      feedRepo: context.read<FeedRepository>(),
-      player: context.read<AudioPlayer>(),
-    ),
+    create: (context) {
+      return HomeViewModel(
+        feedRepo: context.read<FeedRepository>(),
+        player: context.read<AudioPlayer>(),
+      );
+    },
   ),
   // ui: search
   ChangeNotifierProvider(

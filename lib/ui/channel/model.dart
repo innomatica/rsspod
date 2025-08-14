@@ -4,11 +4,11 @@ import 'package:logging/logging.dart';
 import '../../data/repository/feed.dart';
 import '../../model/feed.dart';
 
-class FeedViewModel extends ChangeNotifier {
+class ChannelViewModel extends ChangeNotifier {
   final FeedRepository _feedRepo;
-  FeedViewModel({required FeedRepository feedRepo}) : _feedRepo = feedRepo;
+  ChannelViewModel({required FeedRepository feedRepo}) : _feedRepo = feedRepo;
   // ignore: unused_field
-  final _log = Logger('FeedViewModel');
+  final _log = Logger('ChannelViewModel');
 
   bool _subscribed = false;
   String? _error;
@@ -22,6 +22,7 @@ class FeedViewModel extends ChangeNotifier {
     _error = null;
     _feed = null;
 
+    _log.fine('load:$url');
     if (url != null && url.isNotEmpty) {
       // try local database first
       final feed = await _feedRepo.getFeed(url);
@@ -34,10 +35,12 @@ class FeedViewModel extends ChangeNotifier {
         // try feed source
         _subscribed = false;
         _feed = await _feedRepo.fetchFeed(url);
+        if (_feed == null) {
+          _error = "Server error or invalid RSS data";
+        }
       }
-      // _log.fine('_feed:$_feed');
     } else {
-      _error = "invalid URL";
+      _error = "invalid feed URL";
     }
     notifyListeners();
   }

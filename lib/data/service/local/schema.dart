@@ -9,7 +9,7 @@ const migrations = [
 
 const fgkeyPragma = "PRAGMA foreign_keys = ON;";
 
-const episodeSchema = '''CREATE TABLE IF NOT EXISTS episodes (
+const createEpisodes = '''CREATE TABLE IF NOT EXISTS episodes (
   id INTEGER PRIMARY KEY,
   guid TEXT NOT NULL UNIQUE,
   title TEXT,
@@ -20,7 +20,7 @@ const episodeSchema = '''CREATE TABLE IF NOT EXISTS episodes (
   categories TEXT,
   keywords TEXT,
   updated TIMESTAMP,
-  published TIMESTAMP,
+  published TIMESTAMP NOT NULL,
   link TEXT,
   media_url TEXT,
   media_type TEXT,
@@ -40,7 +40,7 @@ const episodeSchema = '''CREATE TABLE IF NOT EXISTS episodes (
 );''';
 
 // note: channel.id is used as a directory name. it must be unique
-const channelSchema = '''CREATE TABLE IF NOT EXISTS channels (
+const createChannels = '''CREATE TABLE IF NOT EXISTS channels (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   url TEXT NOT NULL UNIQUE,
   title TEXT,
@@ -58,16 +58,21 @@ const channelSchema = '''CREATE TABLE IF NOT EXISTS channels (
   extras TEXT
 );''';
 
-const settingsSchema = '''CREATE TABLE IF NOT EXISTS settings (
+const createSettings = '''CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY,
   retention_period INTEGER,
   search_engine_url TEXT
 );''';
 
-const defaultSettings = """INSERT INTO settings(
+const createTablesV1 = [createEpisodes, createChannels, createSettings];
+
+const defaultSettings =
+    """INSERT INTO settings(
   retention_period, 
   search_engine_url) 
   VALUES(
-  $defaultRetentionDays, 
-  '$defaultSearchEngineUrl'
+  $defaultDisplayPeriod, 
+  '$defaultSearchEngine'
 );""";
+
+const insertTablesV1 = [defaultSettings];
