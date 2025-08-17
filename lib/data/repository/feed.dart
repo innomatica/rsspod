@@ -337,7 +337,7 @@ class FeedRepository {
       final sets = data.keys.map((e) => '$e = ?').join(',');
       return await _dbSrv.insert(
         "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
-        " ON CONFLICT(id, guid) DO UPDATE SET $sets",
+        " ON CONFLICT(guid) DO UPDATE SET $sets",
         [...data.values, ...data.values],
       );
     } on Exception catch (e) {

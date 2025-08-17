@@ -56,12 +56,12 @@ class SubscribedView extends StatelessWidget {
               spacing: 8.0,
               children: [
                 Icon(Icons.search_rounded, color: iconColor),
-                Text("Search Using Podcast Index"),
+                Text("Podcast Index Search"),
               ],
             ),
             subtitle: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [Text("open podcast search engine")],
+              children: [Text("podcast search engine")],
             ),
             onTap: () {
               context.go('/subscribed/search');
@@ -74,7 +74,7 @@ class SubscribedView extends StatelessWidget {
               spacing: 8.0,
               children: [
                 Icon(Icons.favorite_outline_rounded, color: iconColor),
-                Text("Choose from Curated List"),
+                Text("Curated List"),
               ],
             ),
             subtitle: Row(
@@ -92,7 +92,7 @@ class SubscribedView extends StatelessWidget {
               spacing: 8.0,
               children: [
                 Icon(Icons.travel_explore_rounded, color: iconColor),
-                Text("Search Web by Keyword / URL"),
+                Text("Search Web"),
               ],
             ),
             subtitle: TextField(
