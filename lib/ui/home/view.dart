@@ -2,14 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:logging/logging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../util/constants.dart';
 import '../../util/helpers.dart' show secsToHhMmSs, sizeStr, yymmdd;
 import '../../util/miniplayer.dart' show MiniPlayer;
-import '../../util/widgets.dart' show FutureImage, ChannelImage;
+import '../../util/widgets.dart' show ChannelImage;
 import 'model.dart';
 
 enum ViewFilter { unplayed, all, downloaded, liked }
@@ -54,23 +52,10 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  // ignore: unused_field
-  final _log = Logger('HomeView');
   int pageIndex = 0;
   ViewFilter filter = ViewFilter.unplayed;
   Timer? sleepTimer;
   int sleepCount = 0;
-
-  @override
-  initState() {
-    super.initState();
-    widget.model.load();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   void _setSleepTimer() {
     sleepCount = sleepCount <= 0
@@ -138,20 +123,14 @@ class _HomeViewState extends State<HomeView> {
                           ).toString(),
                         );
                       },
-                      // child: ClipRRect(
-                      //   borderRadius: BorderRadiusGeometry.circular(5.0),
-                      //   child: ChannelImage(
-                      //     episode,
-                      //     width: 60,
-                      //     height: 60,
-                      //     opacity: played ? 0.5 : 1.0,
-                      //   ),
-                      // ),
-                      child: FutureImage(
-                        future: widget.model.getChannelImage(episode),
-                        width: 60,
-                        height: 60,
-                        opacity: played ? 0.5 : null,
+                      child: ClipRRect(
+                        borderRadius: BorderRadiusGeometry.circular(5.0),
+                        child: ChannelImage(
+                          episode,
+                          width: 60,
+                          height: 60,
+                          opacity: played ? 0.5 : 1.0,
+                        ),
                       ),
                     ),
                     // channel title, pubdate, episode title
@@ -345,16 +324,19 @@ class _SideBarState extends State<SideBar> {
   }
 
   Future _init() async {
-    final prefs = await SharedPreferences.getInstance();
+    // final prefs = await SharedPreferences.getInstance();
+    // setState(() {
+    //   displayPeriod = prefs.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
+    // });
     setState(() {
-      displayPeriod = prefs.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
+      displayPeriod = widget.model.getDisplayPeriod();
     });
   }
 
   Future _dispose() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(pKeyDisplayPeriod, displayPeriod);
-    // await prefs.setString(pKeySearchEngine, searchEngine);
+    // final prefs = await SharedPreferences.getInstance();
+    // await prefs.setInt(pKeyDisplayPeriod, displayPeriod);
+    await widget.model.setDisplayPeriod(displayPeriod);
   }
 
   @override

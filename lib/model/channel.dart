@@ -1,9 +1,11 @@
 import 'dart:convert';
 
-import '../util/constants.dart';
+import 'package:rsspod/util/constants.dart';
+
+// import '../util/constants.dart';
 
 class Channel {
-  int? id;
+  int id;
   String url;
   String? title;
   String? subtitle;
@@ -12,15 +14,15 @@ class Channel {
   String? description;
   String? language;
   String? link;
-  DateTime? updated;
   DateTime? published;
+  DateTime? updated;
   DateTime? checked;
   int? period;
   String? imageUrl;
   Map<String, dynamic>? extras;
 
   Channel({
-    this.id,
+    required this.id,
     required this.url,
     this.title,
     this.subtitle,
@@ -29,17 +31,19 @@ class Channel {
     this.description,
     this.language,
     this.link,
-    this.updated,
     this.published,
+    this.updated,
     this.checked,
     this.period,
     this.imageUrl,
     this.extras,
   });
 
+  String get imagePath => "$appDocPath/$id/$chnImgFname";
+
   factory Channel.fromPCIndex(Map<String, dynamic> data) {
     final lastUpdateSec =
-        data['lastUpdateTime'] ?? data['newestItemPublishTime'];
+        data['newestItemPublishTime'] ?? data['lastUpdateTime'];
 
     if (data['url'] is String && data['url'].isNotEmpty) {
       return Channel(
@@ -56,7 +60,7 @@ class Channel {
                 lastUpdateSec * 1000,
                 isUtc: true,
               )
-            : null,
+            : DateTime.now(),
         checked: DateTime.now(),
         period: defaultUpdatePeriod,
         categories: data['categories']?.entries

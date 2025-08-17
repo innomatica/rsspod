@@ -1,5 +1,3 @@
-import '../../../util/constants.dart';
-
 const dbname = 'podcast.db';
 const dbversion = 1;
 
@@ -39,9 +37,8 @@ const createEpisodes = '''CREATE TABLE IF NOT EXISTS episodes (
       ON UPDATE CASCADE
 );''';
 
-// note: channel.id is used as a directory name. it must be unique
 const createChannels = '''CREATE TABLE IF NOT EXISTS channels (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id INTEGER PRIMARY KEY,
   url TEXT NOT NULL UNIQUE,
   title TEXT,
   subtitle TEXT,
@@ -58,21 +55,4 @@ const createChannels = '''CREATE TABLE IF NOT EXISTS channels (
   extras TEXT
 );''';
 
-const createSettings = '''CREATE TABLE IF NOT EXISTS settings (
-  id INTEGER PRIMARY KEY,
-  retention_period INTEGER,
-  search_engine_url TEXT
-);''';
-
-const createTablesV1 = [createEpisodes, createChannels, createSettings];
-
-const defaultSettings =
-    """INSERT INTO settings(
-  retention_period, 
-  search_engine_url) 
-  VALUES(
-  $defaultDisplayPeriod, 
-  '$defaultSearchEngine'
-);""";
-
-const insertTablesV1 = [defaultSettings];
+const createTablesV1 = [createEpisodes, createChannels];

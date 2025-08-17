@@ -19,20 +19,13 @@ const pcIdxHost = 'api.podcastindex.org';
 // stock images
 const assetImageRecording = 'assets/images/voice-recording.png';
 const assetImagePodcaster = 'assets/images/podcaster.png';
-
-// // search engine
-// const searchEngines = [
-//   'https://search.brave.com',
-//   'https://duckduckgo.com',
-//   'https://ecosia.org',
-//   'https://google.com',
-// ];
+const defaultChannelImage = assetImageRecording;
+const defaultEpisodeImage = assetImagePodcaster;
 const defaultSearchEngine = 'https://search.brave.com';
-// const pKeySearchEngine = "searchEngine";
 
 // episode display period
-const displayPeriods = [30, 60, 90, 180];
-const defaultDisplayPeriod = 90;
+const displayPeriods = [30, 60, 90, 120];
+const defaultDisplayPeriod = 60;
 const pKeyDisplayPeriod = "displayPeriod";
 final dataRetentionPeriod = displayPeriods.last;
 
@@ -41,4 +34,7 @@ const defaultUpdatePeriod = 1;
 const updatePeriods = [1, 2, 3, 4, 5, 6, 7];
 
 // channel thumbnail image file name
-const channelImgFname = 'thumbnail';
+const chnImgFname = 'thumbnail';
+
+// application document directory path
+late final String appDocPath;

@@ -65,13 +65,21 @@ String mmddHHMM(DateTime? dt, {String fallback = ''}) {
 }
 
 String? googleFaviconUrl(String? url) {
-  String? domain = url
-      ?.replaceFirst("https://", "")
-      .replaceFirst("http://", "")
-      .split("/")
-      .first;
+  if (url != null) {
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      return "https://www.google.com/s2/favicons?domain=${uri.host}&sz=128";
+    }
+  }
+  return null;
 
-  return domain != null
-      ? "https://www.google.com/s2/favicons?domain=$domain&sz=128"
-      : null;
+  // String? domain = url
+  //     ?.replaceFirst("https://", "")
+  //     .replaceFirst("http://", "")
+  //     .split("/")
+  //     .first;
+
+  // return domain != null
+  //     ? "https://www.google.com/s2/favicons?domain=$domain&sz=128"
+  //     : null;
 }

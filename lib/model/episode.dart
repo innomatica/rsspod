@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import '../util/constants.dart';
+
 class Episode {
-  int? id; // db specific: primary key
+  int id; // db specific: primary key
   String guid;
   String? title;
   String? subtitle;
@@ -32,7 +34,7 @@ class Episode {
   String? channelImageUrl;
 
   Episode({
-    this.id,
+    required this.id,
     required this.guid,
     this.title,
     this.subtitle,
@@ -62,6 +64,8 @@ class Episode {
   });
 
   // url could be used as guid
+  String get imagePath => "$appDocPath/$channelId/$id";
+  String get channelImagePath => "$appDocPath/$channelId/$chnImgFname";
   String get mediaFname => guid.replaceAll('/', '\\');
   String? get imageFname =>
       imageUrl != null ? Uri.tryParse(imageUrl!)?.path.split('/').last : null;

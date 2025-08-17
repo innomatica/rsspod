@@ -23,10 +23,6 @@ class EpisodeViewModel extends ChangeNotifier {
     }
   }
 
-  Future<ImageProvider> getEpisodeImage(Episode episode) async {
-    return _feedRepo.getEpisodeImage(episode);
-  }
-
   Future play() async {
     if (_episode?.guid != null) {
       await _feedRepo.playEpisode(_episode!);

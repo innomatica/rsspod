@@ -21,9 +21,6 @@ class DatabaseService {
         for (final schema in createTablesV1) {
           await db.execute(schema);
         }
-        for (final schema in insertTablesV1) {
-          await db.execute(schema);
-        }
       },
     );
   }

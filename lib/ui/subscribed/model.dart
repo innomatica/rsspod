@@ -21,7 +21,7 @@ class SubscribedViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<ImageProvider> getChannelImage(Channel channel) async {
-    return _feedRepo.getChannelImage(channel);
-  }
+  // Future<ImageProvider> getChannelImage(Channel channel) async {
+  //   return _feedRepo.getChannelImage(channel);
+  // }
 }

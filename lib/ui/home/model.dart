@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/repository/feed.dart';
+import '../../model/channel.dart';
 import '../../model/episode.dart';
-import '../../model/settings.dart';
+
 import '../../util/constants.dart';
 
 class HomeViewModel extends ChangeNotifier {
@@ -20,14 +22,17 @@ class HomeViewModel extends ChangeNotifier {
 
   // ignore: unused_field
   final _logger = Logger('HomeViewModel');
-  List<Episode> _episodes = [];
-  Settings? _settings;
+  List<Channel> _channels = <Channel>[];
+  List<Episode> _episodes = <Episode>[];
+
+  SharedPreferences? _spref;
+
   IndexedAudioSource? _currentSource;
   StreamSubscription? _subPlayer;
   StreamSubscription? _subSeqState;
 
   List<Episode> get episodes => _episodes;
-  Settings? get settings => _settings;
+
   List<Episode> get unplayed =>
       _episodes.where((e) => e.played != true).toList();
   List<Episode> get downloaded =>
@@ -36,8 +41,9 @@ class HomeViewModel extends ChangeNotifier {
   IndexedAudioSource? get currentSource => _currentSource;
   String? get currentId => _currentSource?.tag.id;
 
-  void _init() {
+  void _init() async {
     _logger.fine('init');
+
     _subPlayer = _player.playerStateStream.listen((event) async {
       _logger.fine('playerState: ${event.playing} - ${event.processingState}');
       //
@@ -57,13 +63,17 @@ class HomeViewModel extends ChangeNotifier {
       }
     });
     _subSeqState = _player.sequenceStateStream.listen((event) async {
-      _logger.fine('sequenceState: $event');
+      _logger.fine(
+        'idx src seq: ${event.currentIndex} ${event.currentSource} ${event.sequence}',
+      );
       //
       // currentIndex
       // currentSource
       // sequence
       await _handleSequenceStateChange(event);
     });
+
+    _spref = await SharedPreferences.getInstance();
   }
 
   @override
@@ -116,32 +126,34 @@ class HomeViewModel extends ChangeNotifier {
 
   Future load() async {
     _logger.fine('load');
-    // _settings = await _feedRepo.getSettings();
-    // _episodes.clear();
+    _channels = await _feedRepo.getChannels();
 
-    _episodes = await _feedRepo.getEpisodes(
-      period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
-    );
-    notifyListeners();
+    final period = _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
+    final refDate = DateTime.now().subtract(Duration(days: period));
 
-    /*
-    final refDate = DateTime.now().subtract(Duration(days: 14));
-    final channels = await _feedRepo.getChannels();
-    for (final channel in channels) {
-      final episodes = await _feedRepo.fetchEpisodesByChannel(channel);
+    _episodes.clear();
+    for (final channel in _channels) {
+      final episodes = await _feedRepo.getEpisodesByChannel(channel.id);
       _episodes.addAll(episodes.where((e) => e.published.isAfter(refDate)));
       _episodes.sort((a, b) => b.published.compareTo(a.published));
-      notifyListeners();
     }
-    */
+    notifyListeners();
   }
 
-  Future<ImageProvider> getChannelImage(Episode episode) async {
-    return _feedRepo.getChannelImage(episode);
+  Future refreshData() async {
+    _logger.fine('refreshData');
+    await _feedRepo.refreshFeeds(force: true);
+    await load();
   }
+
+  // Audio
 
   Future playEpisode(Episode episode) async {
     await _feedRepo.playEpisode(episode);
+  }
+
+  Future stop() async {
+    await _feedRepo.stop();
   }
 
   Future addToPlayList(Episode episode) async {
@@ -151,61 +163,49 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future togglePlayed(Episode episode) async {
-    if (episode.id != null) {
-      if (episode.played == true) {
-        // clear
-        // _log.fine('clear played');
-        await _feedRepo.clearPlayed(episode.guid);
-      } else {
-        // set
-        // _log.fine('set played');
-        await _feedRepo.setPlayed(episode.guid);
-        // }
-      }
-      _episodes = await _feedRepo.getEpisodes(
-        period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
-      );
-      notifyListeners();
+    if (episode.played == true) {
+      // clear
+      // _log.fine('clear played');
+      await _feedRepo.clearPlayed(episode.guid);
+    } else {
+      // set
+      // _log.fine('set played');
+      await _feedRepo.setPlayed(episode.guid);
+      // }
     }
+    _episodes = await _feedRepo.getEpisodes(
+      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
+    );
+    notifyListeners();
   }
 
   Future toggleLiked(Episode episode) async {
-    if (episode.id != null) {
-      if (episode.liked == true) {
-        await _feedRepo.clearLiked(episode.guid);
-      } else {
-        await _feedRepo.setLiked(episode.guid);
-      }
-      _episodes = await _feedRepo.getEpisodes(
-        period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
-      );
-      notifyListeners();
+    if (episode.liked == true) {
+      await _feedRepo.clearLiked(episode.guid);
+    } else {
+      await _feedRepo.setLiked(episode.guid);
     }
+    _episodes = await _feedRepo.getEpisodes(
+      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
+    );
+    notifyListeners();
   }
 
   Future downloadEpisode(Episode episode) async {
     await _feedRepo.downloadEpisode(episode);
     _episodes = await _feedRepo.getEpisodes(
-      period: _settings?.retentionPeriod ?? defaultDisplayPeriod,
+      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
     );
     notifyListeners();
   }
 
-  Future<String?> getChannelUrl(int? id) async {
-    if (id != null) {
-      final channel = await _feedRepo.getChannel(id);
-      return channel?.url;
-    }
-    return null;
+  // Settings
+
+  int getDisplayPeriod() {
+    return _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
   }
 
-  Future refreshData() async {
-    _logger.fine('refreshData');
-    await _feedRepo.refreshData(force: true);
-    await load();
-  }
-
-  Future stop() async {
-    await _feedRepo.stop();
+  Future setDisplayPeriod(int value) async {
+    await _spref?.setInt(pKeyDisplayPeriod, value);
   }
 }

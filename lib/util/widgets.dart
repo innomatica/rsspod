@@ -1,50 +1,12 @@
+import 'dart:io' show File;
+
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart' show Logger;
-import 'package:rsspod/util/constants.dart' show assetImagePodcaster;
+import 'package:rsspod/util/constants.dart'
+    show assetImagePodcaster, defaultChannelImage, defaultEpisodeImage;
 
 import '../model/channel.dart';
 import '../model/episode.dart';
-
-const defaultImageSize = 100.0;
-
-class FutureImage extends StatelessWidget {
-  final Future<ImageProvider> future;
-  final double? width;
-  final double? height;
-  final double? opacity;
-  const FutureImage({
-    super.key,
-    required this.future,
-    this.width,
-    this.height,
-    this.opacity,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(5),
-      child: FutureBuilder(
-        future: future,
-        builder: (context, snapshot) {
-          return snapshot.hasData
-              ? Image(
-                  image: snapshot.data!,
-                  width: width ?? defaultImageSize,
-                  height: height ?? defaultImageSize,
-                  fit: BoxFit.cover,
-                  opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
-                )
-              : SizedBox(
-                  width: width ?? defaultImageSize,
-                  height: height ?? defaultImageSize,
-                  child: Container(color: Colors.grey),
-                );
-        },
-      ),
-    );
-  }
-}
 
 class ChannelImage extends StatelessWidget {
   final dynamic item;
@@ -65,40 +27,132 @@ class ChannelImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     try {
-      return item is Channel && item.imageUrl != null
-          ? Image.network(
-              item.imageUrl!,
+      return item is Channel
+          ? Image.file(
+              File(item.imagePath),
               width: width,
               height: height,
               fit: BoxFit.cover,
               opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+              errorBuilder: (context, error, stackTrace) {
+                _logger.fine('error:$error');
+                return Image.network(
+                  item.imageUrl,
+                  width: width,
+                  height: height,
+                  fit: BoxFit.cover,
+                  opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+                );
+              },
             )
-          : item is Episode && item.channelImageUrl != null
-          ? Image.network(
-              item.channelImageUrl!,
+          : item is Episode
+          ? Image.file(
+              File(item.channelImagePath),
               width: width,
               height: height,
               fit: BoxFit.cover,
               opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+              errorBuilder: (context, error, stackTrace) {
+                return Image.network(
+                  item.channelImageUrl,
+                  width: width,
+                  height: height,
+                  fit: BoxFit.cover,
+                  opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+                );
+              },
             )
-          : Image.asset(
-              assetImagePodcaster,
+          : _getAssetImage(
+              defaultChannelImage,
               width: width,
               height: height,
-              fit: BoxFit.cover,
-              opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+              opacity: opacity,
             );
     } catch (e) {
       _logger.warning(e.toString());
-      return Image.asset(
+      return _getAssetImage(
         assetImagePodcaster,
+        width: width,
+        height: height,
+        opacity: opacity,
+      );
+    }
+  }
+}
+
+class EpisodeImage extends StatelessWidget {
+  final Episode episode;
+  final double? width;
+  final double? height;
+  final double? opacity;
+  EpisodeImage(
+    this.episode, {
+    super.key,
+    // required this.item,
+    this.width,
+    this.height,
+    this.opacity,
+  });
+
+  final _logger = Logger("ChannelImage");
+
+  @override
+  Widget build(BuildContext context) {
+    try {
+      return Image.file(
+        File(episode.imagePath),
         width: width,
         height: height,
         fit: BoxFit.cover,
         opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+        errorBuilder: (_, _, _) {
+          return episode.imageUrl != null
+              ? Image.network(
+                  episode.imageUrl!,
+                  width: width,
+                  height: height,
+                  fit: BoxFit.cover,
+                  opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+                  errorBuilder: (_, _, _) => _getAssetImage(
+                    defaultEpisodeImage,
+                    width: width,
+                    height: height,
+                    opacity: opacity,
+                  ),
+                )
+              : _getAssetImage(
+                  defaultEpisodeImage,
+                  width: width,
+                  height: height,
+                  opacity: opacity,
+                );
+        },
+      );
+    } catch (e) {
+      _logger.warning(e.toString());
+      return _getAssetImage(
+        defaultEpisodeImage,
+        width: width,
+        height: height,
+        opacity: opacity,
       );
     }
   }
+}
+
+Image _getAssetImage(
+  String assetName, {
+  double? width,
+  double? height,
+  double? opacity,
+}) {
+  return Image.asset(
+    assetName,
+    width: width,
+    height: height,
+    fit: BoxFit.cover,
+    opacity: AlwaysStoppedAnimation(opacity ?? 1.0),
+  );
 }
 
 IconData mediaIcon(String? mediaType) {

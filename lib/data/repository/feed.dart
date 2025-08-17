@@ -1,6 +1,6 @@
 import 'dart:convert' show utf8;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
@@ -13,7 +13,6 @@ import '../../model/channel.dart';
 import '../../model/episode.dart';
 import '../../model/feed.dart';
 import '../../model/pcindex.dart';
-import '../../model/settings.dart';
 import '../../util/constants.dart';
 import '../../util/helpers.dart';
 import '../service/api/pcindex.dart';
@@ -51,8 +50,6 @@ class FeedRepository {
   }
 
   Future<Feed?> fetchFeed(String url) async {
-    // for testing replace url here
-    // url = 'https://feeds.simplecast.com/EmVW7VGp'; // radiolab
     try {
       final res = await http.get(Uri.parse(url));
       if (res.statusCode == 200 &&
@@ -69,11 +66,14 @@ class FeedRepository {
             return Feed.fromRss(root, url);
           } else if (root.name.toString() == 'feed') {
             return Feed.fromAtom(root, url);
+          } else if (root.name.toString() == 'rdf:RDF') {
+            return Feed.fromRdf(root, url);
           }
           _logger.severe('unknown feed format');
           // throw Exception('unknown feed format');
         }
       } else {
+        // http error or non xlm document
         _logger.fine('${res.statusCode}: ${res.headers['content-type']}');
       }
     } catch (e) {
@@ -83,132 +83,82 @@ class FeedRepository {
     return null;
   }
 
-  // FIXME: not intuitive naming
-  Future<Feed?> getFeed(String url) async {
+  // Read Channel and its Episodes
+  Future<Feed?> getFeedByUrl(String url) async {
     final channel = await getChannelByUrl(url);
     if (channel != null) {
-      final episodes = await getEpisodesByChannel(channel.id!);
+      final episodes = await getEpisodesByChannel(channel.id);
       return Feed(channel: channel, episodes: episodes);
     }
     return null;
   }
 
   Future<bool> subscribe(Feed feed) async {
-    _logger.fine('subscrib');
+    _logger.fine('subscribe');
     if (await createChannel(feed.channel) > 0) {
-      // read back
-      final channel = await getChannelByUrl(feed.channel.url);
-      // _log.fine('channel:$channel');
-      if (channel != null) {
-        // download thumbnail
-        await _downloadResource(
-          channel.id!,
-          channel.imageUrl ??
-              "https://www.google.com/s2/favicons?domain=${channel.url}&sz=128",
-          channelImgFname,
-        );
-        // save episodes
-        final refDate = DateTime.now().subtract(
-          Duration(days: dataRetentionPeriod),
-        );
-        for (final episode in feed.episodes) {
-          // _log.fine('episode:$episode');
-          // save only up to maxRetentionDays ago
-          if (episode.published.isBefore(refDate) != true) {
-            episode.channelId = channel.id;
-            await createEpisode(episode);
-          }
+      // save episodes
+      final refDate = DateTime.now().subtract(
+        Duration(days: dataRetentionPeriod),
+      );
+      for (final episode in feed.episodes) {
+        // _log.fine('episode:$episode');
+        // save only up to maxRetentionDays ago
+        if (episode.published.isBefore(refDate) != true) {
+          episode.channelId = feed.channel.id;
+          await createEpisode(episode);
         }
-        return true;
       }
+      return true;
     }
     return false;
   }
 
   Future unsubscribe(int channelId) async {
     _logger.fine('unsubscribe');
-    await deleteChannel(channelId);
+    try {
+      await _dbSrv.delete("DELETE FROM episodes WHERE channel_id = ?", [
+        channelId,
+      ]);
+      await _dbSrv.delete("DELETE FROM channels WHERE id = ?", [channelId]);
+      await _stSrv.deleteDirectory(channelId);
+    } on Exception catch (e) {
+      // rethrow;
+      _logger.severe(e.toString());
+    }
   }
 
-  // Data
-
-  Future refreshData({bool force = false}) async {
-    _logger.fine('refreshData: $force');
+  Future refreshFeeds({bool force = false}) async {
+    _logger.fine('updateFeeds: $force');
     final channels = await getChannels();
     for (final channel in channels) {
       final today = DateTime.now();
+
       // published date is more than a period ago
-      bool pubBeforePeriod =
+      bool pubExpected =
           channel.published != null &&
           today.isAfter(
             channel.published!.add(
               Duration(days: channel.period ?? defaultUpdatePeriod),
             ),
           );
+
       // checked date is more than a period ago
-      bool chkBeforePeriod =
+      bool chkRequired =
           channel.checked != null &&
           today.isAfter(
             channel.checked!.add(
               Duration(days: channel.period ?? defaultUpdatePeriod),
             ),
           );
-      if (force || (pubBeforePeriod && chkBeforePeriod)) {
+
+      _logger.fine(
+        'channel:${channel.id} pubExpected:$pubExpected, chkRequired:$chkRequired',
+      );
+
+      if (force || (pubExpected && chkRequired)) {
         _logger.fine('pub:${channel.published}, chk:${channel.checked}');
         await refreshChannel(channel);
       }
-    }
-  }
-
-  Future<bool> refreshChannel(Channel channel) async {
-    _logger.fine('refreshChannel: ${channel.id}');
-    final feed = await fetchFeed(channel.url);
-    if (channel.id != null && feed != null) {
-      // set channel id
-      feed.channel.id = channel.id;
-      // mark checked
-      await updateChannel(channel.id!, {
-        "checked": DateTime.now().toIso8601String(),
-      });
-      // reference date
-      final refDate = DateTime.now().subtract(
-        Duration(days: dataRetentionPeriod),
-      );
-      for (final episode in feed.episodes) {
-        // inject channel id field
-        episode.channelId = channel.id;
-        // _log.fine('episode:${episode.guid}.${episode.published}');
-        // update only back to reference date
-        if (episode.published.isBefore(refDate) != true) {
-          // _log.fine('create:${episode.title}');
-          await refreshEpisode(episode);
-        }
-      }
-      await purgeChannel(channel.id);
-      return true;
-    }
-    return false;
-  }
-
-  Future refreshEpisode(Episode episode) async {
-    final file = await _stSrv.getFile(episode.channelId, episode.mediaFname);
-    final data = episode.toSqlite();
-    data.remove('id');
-    // fields that have to be retained
-    data.remove('liked');
-    data.remove('played');
-    // set downloaded field based on the stored file
-    data['downloaded'] = file?.existsSync() == true;
-    try {
-      final args = List.filled(data.length, '?').join(',');
-      final sets = data.keys.map((e) => '$e = ?').join(',');
-      return await _dbSrv.insert(
-        "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
-        " ON CONFLICT(guid) DO UPDATE SET $sets",
-        [...data.values, ...data.values],
-      );
-    } on Exception {
-      rethrow;
     }
   }
 
@@ -218,20 +168,6 @@ class FeedRepository {
     try {
       final rows = await _dbSrv.queryAll("SELECT * FROM channels");
       return rows.map((e) => Channel.fromSqlite(e)).toList();
-    } on Exception {
-      rethrow;
-    }
-  }
-
-  Future<Channel?> getChannel(int? id) async {
-    try {
-      if (id != null) {
-        final row = await _dbSrv.query("SELECT * FROM channels WHERE id = ?", [
-          id,
-        ]);
-        return row != null ? Channel.fromSqlite(row) : null;
-      }
-      return null;
     } on Exception {
       rethrow;
     }
@@ -251,16 +187,36 @@ class FeedRepository {
   Future<int> createChannel(Channel channel) async {
     try {
       final data = channel.toSqlite();
-      data.remove('id');
       final args = List.filled(data.length, '?').join(',');
-      final sets = data.keys.map((e) => '$e = ?').join(',');
-      return await _dbSrv.insert(
+      final res = await _dbSrv.insert(
         "INSERT INTO channels(${data.keys.join(',')}) VALUES($args)"
-        " ON CONFLICT(url) DO UPDATE SET $sets",
-        [...data.values, ...data.values],
+        " ON CONFLICT(id) DO NOTHING",
+        [...data.values],
       );
-    } on Exception {
-      rethrow;
+      if (res > 0) {
+        // download channel image
+        if (await _downloadResource(
+              channel.id,
+              channel.imageUrl ?? googleFaviconUrl(channel.url),
+              chnImgFname,
+            ) ==
+            false) {
+          final byteData = await rootBundle.load(defaultChannelImage);
+          final file = await _stSrv.getFile(channel.id, chnImgFname);
+          await file?.create(recursive: true);
+          await file?.writeAsBytes(
+            byteData.buffer.asUint8List(
+              byteData.offsetInBytes,
+              byteData.lengthInBytes,
+            ),
+          );
+        }
+      }
+      return res;
+    } on Exception catch (e) {
+      // rethrow;
+      _logger.severe(e.toString());
+      return 0;
     }
   }
 
@@ -272,91 +228,47 @@ class FeedRepository {
         ...data.values,
         channelId,
       ]);
-    } on Exception {
-      rethrow;
+    } on Exception catch (e) {
+      // rethrow;
+      _logger.severe(e.toString());
     }
+    return 0;
   }
 
-  Future deleteChannel(int channelId) async {
-    try {
-      await _dbSrv.delete("DELETE FROM episodes WHERE channel_id = ?", [
-        channelId,
-      ]);
-      await _dbSrv.delete("DELETE FROM channels WHERE id = ?", [channelId]);
-      await _stSrv.deleteDirectory(channelId);
-    } on Exception {
-      rethrow;
-    }
-  }
-
-  Future purgeChannel(int? channelId) async {
-    try {
-      if (channelId != null) {
-        _logger.fine('purgeChannel');
-        final episodes = await getEpisodesByChannel(channelId);
-        final refDate = DateTime.now().subtract(
-          Duration(days: dataRetentionPeriod),
-        );
-        for (final episode in episodes) {
-          // delete expired episodes and its local media data
-          if (episode.published.isBefore(refDate) == true) {
-            await deleteEpisode(episode.guid);
-            await _stSrv.deleteFile(channelId, episode.mediaFname);
-            if (episode.imageFname != null) {
-              await _stSrv.deleteFile(channelId, episode.imageFname!);
-            }
-          }
-          // delete local media data of played episode
-          if (episode.played == true) {
-            await _stSrv.deleteFile(channelId, episode.mediaFname);
-          }
-        }
-      }
-    } on Exception {
-      rethrow;
-    }
-  }
-
-  Future<List<Episode>> fetchEpisodesByChannel(Channel channel) async {
-    final episodes = <Episode>[];
+  Future<bool> refreshChannel(Channel channel) async {
+    _logger.fine('refreshChannel: ${channel.id}');
     final feed = await fetchFeed(channel.url);
     if (feed != null) {
+      // overwrite channel id
+      feed.channel.id = channel.id;
+      // mark checked
+      await updateChannel(channel.id, {
+        "checked": DateTime.now().toIso8601String(),
+      });
+      // reference date
+      final refDate = DateTime.now().subtract(
+        Duration(days: dataRetentionPeriod),
+      );
       for (final episode in feed.episodes) {
+        // inject channel id field
         episode.channelId = channel.id;
-        episode.channelTitle = channel.title;
-        episode.channelImageUrl = channel.imageUrl;
-      }
-      episodes.addAll(feed.episodes);
-    }
-    return episodes;
-  }
-
-  Future<List<Episode>> fetchEpisodes() async {
-    final episodes = <Episode>[];
-    final rows = await _dbSrv.queryAll("SELECT * FROM channels");
-    final channels = rows.map((e) => Channel.fromSqlite(e)).toList();
-    for (final channel in channels) {
-      final feed = await fetchFeed(channel.url);
-      if (feed != null) {
-        for (final episode in feed.episodes) {
-          episode.channelId = channel.id;
-          episode.channelUrl = channel.url;
-          episode.channelTitle = channel.title;
-          episode.channelImageUrl = channel.imageUrl;
+        // _log.fine('episode:${episode.guid}.${episode.published}');
+        // update only back to reference date
+        if (episode.published.isBefore(refDate) != true) {
+          // _log.fine('create:${episode.title}');
+          await refreshEpisode(episode);
         }
-        episodes.addAll(feed.episodes);
       }
+      // remove expired episodes and their data
+      await _purgeEpisodes(channel.id);
+      return true;
     }
-    return episodes;
+    return false;
   }
 
   // Episode
 
-  Future<List<Episode>> getEpisodes({
-    int period = 90,
-    bool force = false,
-  }) async {
-    await refreshData(force: force);
+  Future<List<Episode>> getEpisodes({int period = defaultDisplayPeriod}) async {
     final start = yymmdd(DateTime.now().subtract(Duration(days: period)));
     try {
       final rows = await _dbSrv.queryAll(
@@ -425,10 +337,11 @@ class FeedRepository {
       final sets = data.keys.map((e) => '$e = ?').join(',');
       return await _dbSrv.insert(
         "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
-        " ON CONFLICT(guid) DO UPDATE SET $sets",
+        " ON CONFLICT(id, guid) DO UPDATE SET $sets",
         [...data.values, ...data.values],
       );
-    } on Exception {
+    } on Exception catch (e) {
+      _logger.severe(e.toString());
       rethrow;
     }
   }
@@ -445,13 +358,117 @@ class FeedRepository {
     }
   }
 
-  Future deleteEpisode(String guid) async {
+  Future refreshEpisode(Episode episode) async {
+    final file = await _stSrv.getFile(episode.channelId, episode.mediaFname);
+    final data = episode.toSqlite();
+    // fields that have to be retained
+    data.remove('liked');
+    data.remove('played');
+    // set downloaded field based on the stored file
+    data['downloaded'] = file?.existsSync() == true;
     try {
-      await _dbSrv.delete("DELETE FROM episodes WHERE guid = ?", [guid]);
+      _logger.fine('upsert episode:${episode.id}');
+      final args = List.filled(data.length, '?').join(',');
+      final sets = data.keys.map((e) => '$e = ?').join(',');
+      return await _dbSrv.insert(
+        "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
+        " ON CONFLICT(guid) DO UPDATE SET $sets",
+        [...data.values, ...data.values],
+      );
     } on Exception {
       rethrow;
     }
   }
+
+  Future<bool> downloadEpisode(Episode episode) async {
+    if (episode.channelId != null && episode.mediaUrl != null) {
+      if (await _downloadResource(
+        episode.channelId!,
+        episode.mediaUrl!,
+        episode.mediaFname,
+      )) {
+        // download successful
+        episode.downloaded = true;
+        // note downloaded field type is integer
+        await updateEpisode(episode.id, {"downloaded": 1});
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Audio Player
+
+  Future<IndexedAudioSource?> getAudioSource(Episode episode) async {
+    final audioUri = await _getAudioUri(
+      episode.channelId,
+      episode.mediaUrl,
+      episode.mediaFname,
+    );
+
+    if (audioUri != null) {
+      return AudioSource.uri(
+        audioUri,
+        tag: MediaItem(
+          id: episode.guid,
+          title: episode.title ?? "Title Unknown",
+          album: episode.channelTitle ?? "Album Unknown",
+          artist: episode.author,
+          artUri:
+              await _getImageUri(
+                episode.channelId,
+                episode.imageUrl,
+                episode.imageFname,
+              ) ??
+              await _getImageUri(
+                episode.channelId,
+                episode.channelImageUrl,
+                chnImgFname,
+              ),
+          extras: {},
+        ),
+      );
+    }
+    return null;
+  }
+
+  Future playEpisode(Episode episode) async {
+    _logger.fine('requested: ${episode.guid}');
+    _logger.fine(
+      'current:${(_player.audioSource as IndexedAudioSource?)?.tag.id}',
+    );
+    if ((_player.audioSource as IndexedAudioSource?)?.tag.id == episode.guid) {
+      _logger.fine('current episode: do toggle playing');
+      _player.playing ? await _player.pause() : await _player.play();
+    } else {
+      _logger.fine('new episode');
+      final audioSource = await getAudioSource(episode);
+      // final audioSource = episode.toAudioSource();
+      if (audioSource != null) {
+        _logger.fine('audioSource:${audioSource.tag}');
+        await _player.stop();
+        await _player.setAudioSource(audioSource);
+        await _player.seek(Duration(seconds: episode.mediaSeekPos ?? 0));
+        await _player.play();
+      }
+    }
+  }
+
+  Future addToPlayList(Episode episode) async {
+    final audioSource = await getAudioSource(episode);
+    // final audioSource = episode.toAudioSource();
+    if (audioSource != null) {
+      _logger.fine('audioSource:${audioSource.tag}');
+      // just_audio version 0.10 specific
+      await _player.addAudioSource(audioSource);
+    }
+  }
+
+  Future stop() async {
+    await _player.stop();
+  }
+
+  // Others
 
   Future setPlayed(String guid) async {
     try {
@@ -527,52 +544,63 @@ class FeedRepository {
     }
   }
 
-  // Settings
+  // Internal use
 
-  Future<Settings?> getSettings() async {
+  Future _purgeEpisodes(int? channelId) async {
     try {
-      final row = await _dbSrv.query("SELECT * from settings");
-      return row != null ? Settings.fromSqlite(row) : null;
+      if (channelId != null) {
+        _logger.fine('purgeChannel');
+        final episodes = await getEpisodesByChannel(channelId);
+        final refDate = DateTime.now().subtract(
+          Duration(days: dataRetentionPeriod),
+        );
+        for (final episode in episodes) {
+          // delete expired episodes and its local media data
+          if (episode.published.isBefore(refDate) == true) {
+            await _dbSrv.delete("DELETE FROM episodes WHERE guid = ?", [
+              episode.guid,
+            ]);
+            await _stSrv.deleteFile(channelId, episode.mediaFname);
+            if (episode.imageFname != null) {
+              await _stSrv.deleteFile(channelId, episode.imageFname!);
+            }
+          }
+          // delete local media data of played episode
+          if (episode.played == true) {
+            await _stSrv.deleteFile(channelId, episode.mediaFname);
+          }
+        }
+      }
     } on Exception {
       rethrow;
     }
   }
-
-  Future updateSettings(int settingsId, Map<String, Object?> data) async {
-    try {
-      final sets = data.keys.map((e) => '$e = ?').join(',');
-      await _dbSrv.update("UPDATE settings SET $sets WHERE id = ?", [
-        ...data.values,
-        settingsId,
-      ]);
-    } on Exception {
-      rethrow;
-    }
-  }
-
-  // Resources
 
   Future<bool> _downloadResource(
     int channelId,
-    String url,
+    String? url,
     String fname,
   ) async {
-    bool flag = false;
-    final client = http.Client();
-    final req = http.Request('GET', Uri.parse(url));
-    final res = await client.send(req);
-    if (res.statusCode == 200) {
-      _logger.fine('downloading: $url to $fname');
-      final file = await _stSrv.getFile(channelId, fname);
-      if (file != null) {
-        await file.create(recursive: true);
-        final sink = file.openWrite();
-        await res.stream.pipe(sink);
-        flag = true;
+    try {
+      final client = http.Client();
+      final req = http.Request('GET', Uri.parse(url ?? ""));
+      final res = await client.send(req);
+      if (res.statusCode == 200) {
+        _logger.fine('downloading: $url to $fname');
+        final file = await _stSrv.getFile(channelId, fname);
+        if (file != null) {
+          await file.create(recursive: true);
+          final sink = file.openWrite();
+          await res.stream.pipe(sink);
+          return true;
+        }
       }
+      client.close();
+    } catch (e) {
+      // rethrow;
+      _logger.severe(e.toString());
     }
-    client.close();
-    return flag;
+    return false;
   }
 
   Future<Uri?> _getAudioUri(int? channelId, String? url, String? fname) async {
@@ -600,127 +628,5 @@ class FeedRepository {
       }
     }
     return null;
-  }
-
-  // Warning: keep the code duplication with _getImageUri for efficiency
-  Future<ImageProvider> getEpisodeImage(Episode episode) async {
-    final file = await _stSrv.getFile(episode.channelId, episode.imageFname);
-    if (file != null) {
-      if (file.existsSync()) {
-        return FileImage(file);
-      } else if (episode.channelId != null && episode.imageFname != null) {
-        if (await _downloadResource(
-          episode.channelId!,
-          episode.imageUrl!,
-          episode.imageFname!,
-        )) {
-          return FileImage(file);
-        }
-        return NetworkImage(Uri.parse(episode.imageUrl!).toString());
-      }
-    }
-    return AssetImage(assetImagePodcaster);
-  }
-
-  Future<ImageProvider> getChannelImage(dynamic chnOrEps) async {
-    final file = await _stSrv.getFile(
-      chnOrEps is Channel ? chnOrEps.id : chnOrEps.channelId,
-      channelImgFname,
-    );
-    return file != null && file.existsSync()
-        ? FileImage(file) // thumbnail found in the local
-        : chnOrEps.imageUrl != null
-        ? NetworkImage(chnOrEps.imageUrl.toString()) // has valid imageUrl
-        : AssetImage(assetImageRecording); // fallback image
-  }
-
-  Future<bool> downloadEpisode(Episode episode) async {
-    if (episode.id != null &&
-        episode.channelId != null &&
-        episode.mediaUrl != null) {
-      if (await _downloadResource(
-        episode.channelId!,
-        episode.mediaUrl!,
-        episode.mediaFname,
-      )) {
-        // download successful
-        episode.downloaded = true;
-        // note downloaded field type is integer
-        await updateEpisode(episode.id!, {"downloaded": 1});
-        return true;
-      }
-    }
-    return false;
-  }
-
-  // Audio Player
-
-  Future<IndexedAudioSource?> getAudioSource(Episode episode) async {
-    final audioUri = await _getAudioUri(
-      episode.channelId,
-      episode.mediaUrl,
-      episode.mediaFname,
-    );
-
-    if (audioUri != null) {
-      return AudioSource.uri(
-        audioUri,
-        tag: MediaItem(
-          id: episode.guid,
-          title: episode.title ?? "Title Unknown",
-          album: episode.channelTitle ?? "Album Unknown",
-          artist: episode.author,
-          artUri:
-              await _getImageUri(
-                episode.channelId,
-                episode.imageUrl,
-                episode.imageFname,
-              ) ??
-              await _getImageUri(
-                episode.channelId,
-                episode.channelImageUrl,
-                channelImgFname,
-              ),
-          extras: {},
-        ),
-      );
-    }
-    return null;
-  }
-
-  Future playEpisode(Episode episode) async {
-    _logger.fine('requested: ${episode.guid}');
-    _logger.fine(
-      'current:${(_player.audioSource as IndexedAudioSource?)?.tag.id}',
-    );
-    if ((_player.audioSource as IndexedAudioSource?)?.tag.id == episode.guid) {
-      _logger.fine('current episode: do toggle playing');
-      _player.playing ? await _player.pause() : await _player.play();
-    } else {
-      _logger.fine('new episode');
-      final audioSource = await getAudioSource(episode);
-      // final audioSource = episode.toAudioSource();
-      if (audioSource != null) {
-        _logger.fine('audioSource:${audioSource.tag}');
-        await _player.stop();
-        await _player.setAudioSource(audioSource);
-        await _player.seek(Duration(seconds: episode.mediaSeekPos ?? 0));
-        await _player.play();
-      }
-    }
-  }
-
-  Future addToPlayList(Episode episode) async {
-    final audioSource = await getAudioSource(episode);
-    // final audioSource = episode.toAudioSource();
-    if (audioSource != null) {
-      _logger.fine('audioSource:${audioSource.tag}');
-      // just_audio version 0.10 specific
-      await _player.addAudioSource(audioSource);
-    }
-  }
-
-  Future stop() async {
-    await _player.stop();
   }
 }

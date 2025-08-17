@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:logging/logging.dart';
 
 import '../../model/feed.dart';
+import '../../util/constants.dart' show defaultUpdatePeriod, updatePeriods;
 import '../../util/helpers.dart';
 import '../../util/widgets.dart';
 import 'model.dart';
@@ -27,8 +28,8 @@ class ChannelView extends StatelessWidget {
         Stack(
           alignment: Alignment.center,
           children: [
-            FutureImage(
-              future: model.getChannelImage(),
+            ChannelImage(
+              model.feed!.channel,
               height: 160,
               width: double.maxFinite,
               opacity: 0.50,
@@ -86,19 +87,11 @@ class ChannelView extends StatelessWidget {
           ],
         ),
         SizedBox(height: 8),
-        // last published
-        Row(
-          spacing: 8,
-          children: [
-            Text('last published', style: infoStyle),
-            Text(
-              yymmdd(
-                data.channel.published ?? data.channel.updated,
-                fallback: 'unknown',
-              ),
-            ),
-          ],
-        ),
+        // // for test only
+        Text('id: ${data.channel.id}'),
+        Text('url: ${data.channel.url}'),
+        Text('link: ${data.channel.link}'),
+        Text('categories: ${data.channel.categories}'),
         // last checked
         Row(
           spacing: 8,
@@ -107,32 +100,40 @@ class ChannelView extends StatelessWidget {
             Text(daysAgo(data.channel.checked)),
           ],
         ),
-        // // update period
-        // Row(
-        //   spacing: 6,
-        //   children: [
-        //     Text('update period', style: infoStyle),
-        //     DropdownButton<int>(
-        //       isDense: true,
-        //       elevation: 0,
-        //       value: model.feed?.channel.period ?? defaultUpdatePeriod,
-        //       items: updatePeriods
-        //           .map(
-        //             (e) => DropdownMenuItem<int>(
-        //               value: e,
-        //               onTap: () {},
-        //               child: Text('$e d'),
-        //             ),
-        //           )
-        //           .toList(),
-        //       onChanged: (value) async {
-        //         if (value != null) {
-        //           await model.updatePeriod(value);
-        //         }
-        //       },
-        //     ),
-        //   ],
-        // ),
+        // last updated
+        Row(
+          spacing: 8,
+          children: [
+            Text('last updated', style: infoStyle),
+            Text(yymmdd(data.channel.updated, fallback: 'unknown')),
+          ],
+        ),
+        // update period
+        Row(
+          spacing: 6,
+          children: [
+            Text('update period', style: infoStyle),
+            DropdownButton<int>(
+              isDense: true,
+              elevation: 0,
+              value: model.feed?.channel.period ?? defaultUpdatePeriod,
+              items: updatePeriods
+                  .map(
+                    (e) => DropdownMenuItem<int>(
+                      value: e,
+                      onTap: () {},
+                      child: Text('$e d'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) async {
+                if (value != null) {
+                  await model.updatePeriod(value);
+                }
+              },
+            ),
+          ],
+        ),
         SizedBox(height: 8),
         Text(removeTags(data.channel.description)),
         // Text(data.channel.language ?? 'language null'),
@@ -148,7 +149,19 @@ class ChannelView extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(fontWeight: FontWeight.w700),
             ),
-            subtitle: Text(yymmdd(e.published)),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(yymmdd(e.published)),
+                // // for test only
+                Text(e.mediaType ?? "type"),
+                Text(e.mediaSize?.toString() ?? "size"),
+                Text(e.mediaDuration?.toString() ?? "duration"),
+                Text(e.mediaUrl ?? "url"),
+                Text(e.link ?? "link"),
+                Text(e.categories ?? 'categories'),
+              ],
+            ),
           ),
         ),
       ],
@@ -171,6 +184,7 @@ class ChannelView extends StatelessWidget {
             ),
             title: Text("Channel"),
             actions: [
+              // subscription button
               model.subscribed
                   ? TextButton.icon(
                       label: Text(
@@ -201,6 +215,7 @@ class ChannelView extends StatelessWidget {
                       ),
                       onPressed: () async => await model.subscribe(),
                     ),
+              // copy button
               IconButton(
                 icon: Icon(Icons.content_copy_rounded),
                 onPressed: () {

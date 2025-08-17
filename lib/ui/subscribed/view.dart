@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../util/widgets.dart';
+import '../../util/widgets.dart' show ChannelImage;
 import 'model.dart';
 
 enum SearchEngine { brave, duckduckgo, ecosia, google }
@@ -146,10 +146,9 @@ class SubscribedView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       // thumbnail
-                      FutureImage(
-                        future: model.getChannelImage(e),
-                        width: 100,
-                        height: 100,
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(5.0),
+                        child: ChannelImage(e, width: 100, height: 100),
                       ),
                       // title
                       Padding(

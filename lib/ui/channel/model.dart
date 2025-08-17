@@ -25,7 +25,7 @@ class ChannelViewModel extends ChangeNotifier {
     _log.fine('load:$url');
     if (url != null && url.isNotEmpty) {
       // try local database first
-      final feed = await _feedRepo.getFeed(url);
+      final feed = await _feedRepo.getFeedByUrl(url);
       // final feed = null;
       if (feed != null) {
         // local found: already subscribed
@@ -42,6 +42,7 @@ class ChannelViewModel extends ChangeNotifier {
     } else {
       _error = "invalid feed URL";
     }
+    // print('feed:$_feed');
     notifyListeners();
   }
 
@@ -58,16 +59,16 @@ class ChannelViewModel extends ChangeNotifier {
   Future unsubscribe() async {
     if (_subscribed && _feed?.channel.id != null) {
       _log.fine('unsubscribe');
-      await _feedRepo.unsubscribe(_feed!.channel.id!);
+      await _feedRepo.unsubscribe(_feed!.channel.id);
       _subscribed = false;
     }
     notifyListeners();
   }
 
-  Future<ImageProvider> getChannelImage() async {
-    // _log.fine('getImage:$url');
-    return _feedRepo.getChannelImage(_feed!.channel);
-  }
+  // Future<ImageProvider> getChannelImage() async {
+  //   // _log.fine('getImage:$url');
+  //   return _feedRepo.getChannelImage(_feed!.channel);
+  // }
 
   Future refreshChannel() async {
     if (_feed != null && _subscribed) {
@@ -78,7 +79,7 @@ class ChannelViewModel extends ChangeNotifier {
   Future updatePeriod(int period) async {
     if (_feed?.channel.id != null && _subscribed) {
       // _log.fine('updatePeriod:$period');
-      final res = await _feedRepo.updateChannel(_feed!.channel.id!, {
+      final res = await _feedRepo.updateChannel(_feed!.channel.id, {
         "period": period,
       });
       if (res == 1) {
