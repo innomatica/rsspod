@@ -142,7 +142,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Future refreshData() async {
     _logger.fine('refreshData');
-    await _feedRepo.refreshFeeds(force: true);
+    await _feedRepo.refreshFeeds(force: false);
     await load();
   }
 
