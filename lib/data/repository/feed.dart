@@ -20,7 +20,6 @@ import '../service/local/sqflite.dart';
 import '../service/local/storage.dart';
 
 class FeedRepository {
-  // ignore: unused_field
   final DatabaseService _dbSrv;
   final StorageService _stSrv;
   final PCIndexService _pcIdx;
@@ -36,6 +35,7 @@ class FeedRepository {
        _player = player;
 
   final _unesc = HtmlUnescape();
+  // ignore: unused_field
   final _logger = Logger('FeedRespository');
 
   AudioPlayer get player => _player;
@@ -256,7 +256,7 @@ class FeedRepository {
         // update only back to reference date
         if (episode.published.isBefore(refDate) != true) {
           // _log.fine('create:${episode.title}');
-          await refreshEpisode(episode);
+          await _refreshEpisode(episode);
         }
       }
       // remove expired episodes and their data
@@ -353,28 +353,6 @@ class FeedRepository {
         ...data.values,
         episodeId,
       ]);
-    } on Exception {
-      rethrow;
-    }
-  }
-
-  Future refreshEpisode(Episode episode) async {
-    final file = await _stSrv.getFile(episode.channelId, episode.mediaFname);
-    final data = episode.toSqlite();
-    // fields that have to be retained
-    data.remove('liked');
-    data.remove('played');
-    // set downloaded field based on the stored file
-    data['downloaded'] = file?.existsSync() == true;
-    try {
-      _logger.fine('upsert episode:${episode.id}');
-      final args = List.filled(data.length, '?').join(',');
-      final sets = data.keys.map((e) => '$e = ?').join(',');
-      return await _dbSrv.insert(
-        "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
-        " ON CONFLICT(guid) DO UPDATE SET $sets",
-        [...data.values, ...data.values],
-      );
     } on Exception {
       rethrow;
     }
@@ -545,6 +523,28 @@ class FeedRepository {
   }
 
   // Internal use
+
+  Future _refreshEpisode(Episode episode) async {
+    final file = await _stSrv.getFile(episode.channelId, episode.mediaFname);
+    final data = episode.toSqlite();
+    // fields that have to be retained
+    data.remove('liked');
+    data.remove('played');
+    // set downloaded field based on the stored file
+    data['downloaded'] = file?.existsSync() == true;
+    try {
+      _logger.fine('upsert episode:${episode.id}');
+      final args = List.filled(data.length, '?').join(',');
+      final sets = data.keys.map((e) => '$e = ?').join(',');
+      return await _dbSrv.insert(
+        "INSERT INTO episodes(${data.keys.join(',')}) VALUES($args)"
+        " ON CONFLICT(guid) DO UPDATE SET $sets",
+        [...data.values, ...data.values],
+      );
+    } on Exception {
+      rethrow;
+    }
+  }
 
   Future _purgeEpisodes(int? channelId) async {
     try {
