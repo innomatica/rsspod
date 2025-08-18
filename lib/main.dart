@@ -1,13 +1,14 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:logging/logging.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:logging/logging.dart' show Logger, Level;
+import 'package:path_provider/path_provider.dart'
+    show getApplicationDocumentsDirectory;
 import 'package:provider/provider.dart';
 
 import './util/constants.dart' show appName, appDocPath;
-import './util/dependencies.dart';
-import './util/routing.dart';
+import './util/dependencies.dart' show providers;
+import './util/routing.dart' show router;
 
 Future<void> main() async {
   Logger.root.level = kDebugMode ? Level.FINE : Level.WARNING;

@@ -1,8 +1,7 @@
 import 'dart:convert';
 
-import 'package:rsspod/util/constants.dart';
-
-// import '../util/constants.dart';
+import '../util/constants.dart'
+    show appDocPath, chnImgFname, defaultUpdatePeriod;
 
 class Channel {
   int id;

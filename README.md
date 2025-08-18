@@ -8,7 +8,4 @@ A new Flutter project.
 
 ## TODO
 
-* replace settings with shared preferences
-* ~html unescape before xml parse~
-* get rid of episodes table
-* ~get rid of liked~
+* MediaItem dose not show episode image
