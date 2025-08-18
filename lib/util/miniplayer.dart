@@ -169,15 +169,11 @@ class ModalPlayer extends StatelessWidget {
             },
           ),
           // first row: speed, position, volume
-          StreamBuilder<Duration>(
-            stream: player.positionStream,
-            builder: (context, snapshot) {
-              return StatefulBuilder(
-                builder: (context, setState) {
-                  if (!ignoreStream && snapshot.hasData) {
-                    playerPos =
-                        snapshot.data?.inSeconds.toDouble() ?? playerPos;
-                  }
+          StatefulBuilder(
+            builder: (context, setState) {
+              return StreamBuilder(
+                stream: ignoreStream ? null : player.positionStream,
+                builder: (context, asyncSnapshot) {
                   return Column(
                     children: [
                       // position slider
@@ -187,7 +183,10 @@ class ModalPlayer extends StatelessWidget {
                           vertical: 8.0,
                         ),
                         child: Slider(
-                          value: playerPos,
+                          value: ignoreStream
+                              ? playerPos
+                              : player.position.inSeconds.toDouble(),
+                          min: 0.0,
                           max: player.duration?.inSeconds.toDouble() ?? 100.0,
                           padding: EdgeInsets.only(
                             top: 16,
@@ -202,8 +201,10 @@ class ModalPlayer extends StatelessWidget {
                           },
                           onChangeEnd: (value) async {
                             await player.seek(Duration(seconds: value.toInt()));
-                            ignoreStream = false;
+                            setState(() => ignoreStream = false);
                           },
+                          label: secsToHhMmSs(playerPos.floor()),
+                          divisions: 100,
                         ),
                       ),
                       Row(
