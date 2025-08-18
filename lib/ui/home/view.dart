@@ -325,7 +325,7 @@ class _SideBarState extends State<SideBar> {
 
   Future _init() async {
     setState(() {
-      displayPeriod = widget.model.getDisplayPeriod();
+      displayPeriod = widget.model.displayPeriod;
     });
   }
 

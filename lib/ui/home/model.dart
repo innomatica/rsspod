@@ -25,8 +25,7 @@ class HomeViewModel extends ChangeNotifier {
   List<Channel> _channels = <Channel>[];
   List<Episode> _episodes = <Episode>[];
 
-  SharedPreferences? _spref;
-
+  int _displayPeriod = defaultDisplayPeriod;
   IndexedAudioSource? _currentSource;
   StreamSubscription? _subPlayer;
   StreamSubscription? _subSeqState;
@@ -40,6 +39,7 @@ class HomeViewModel extends ChangeNotifier {
   List<Episode> get liked => _episodes.where((e) => e.liked == true).toList();
   IndexedAudioSource? get currentSource => _currentSource;
   String? get currentId => _currentSource?.tag.id;
+  int get displayPeriod => _displayPeriod;
 
   void _init() async {
     _logger.fine('init');
@@ -72,8 +72,6 @@ class HomeViewModel extends ChangeNotifier {
       // sequence
       await _handleSequenceStateChange(event);
     });
-
-    _spref = await SharedPreferences.getInstance();
   }
 
   @override
@@ -128,8 +126,10 @@ class HomeViewModel extends ChangeNotifier {
     _logger.fine('load');
     _channels = await _feedRepo.getChannels();
 
-    final period = _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
-    final refDate = DateTime.now().subtract(Duration(days: period));
+    final spref = await SharedPreferences.getInstance();
+    _displayPeriod = spref.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
+
+    final refDate = DateTime.now().subtract(Duration(days: _displayPeriod));
 
     _episodes.clear();
     for (final channel in _channels) {
@@ -173,9 +173,8 @@ class HomeViewModel extends ChangeNotifier {
       await _feedRepo.setPlayed(episode.guid);
       // }
     }
-    _episodes = await _feedRepo.getEpisodes(
-      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
-    );
+
+    _episodes = await _feedRepo.getEpisodes(period: _displayPeriod);
     notifyListeners();
   }
 
@@ -185,27 +184,22 @@ class HomeViewModel extends ChangeNotifier {
     } else {
       await _feedRepo.setLiked(episode.guid);
     }
-    _episodes = await _feedRepo.getEpisodes(
-      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
-    );
+
+    _episodes = await _feedRepo.getEpisodes(period: _displayPeriod);
     notifyListeners();
   }
 
   Future downloadEpisode(Episode episode) async {
     await _feedRepo.downloadEpisode(episode);
-    _episodes = await _feedRepo.getEpisodes(
-      period: _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod,
-    );
+    _episodes = await _feedRepo.getEpisodes(period: _displayPeriod);
     notifyListeners();
   }
 
   // Settings
 
-  int getDisplayPeriod() {
-    return _spref?.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
-  }
-
   Future setDisplayPeriod(int value) async {
-    await _spref?.setInt(pKeyDisplayPeriod, value);
+    final spref = await SharedPreferences.getInstance();
+    await spref.setInt(pKeyDisplayPeriod, value);
+    _displayPeriod = value;
   }
 }
