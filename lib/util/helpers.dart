@@ -39,8 +39,9 @@ String removeTags(String? input) {
 }
 
 const _month = [
-  "Jan",
-  "Feb",
+  "inv", // 0
+  "Jan", // 1
+  "Feb", // 2
   "Mar",
   "Apr",
   "May",
@@ -50,7 +51,7 @@ const _month = [
   "Sep",
   "Oct",
   "Nov",
-  "Dec",
+  "Dec", // 12
 ];
 
 String _twoDigit(int i) {
