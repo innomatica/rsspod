@@ -200,6 +200,6 @@ class HomeViewModel extends ChangeNotifier {
   Future setDisplayPeriod(int value) async {
     final spref = await SharedPreferences.getInstance();
     await spref.setInt(pKeyDisplayPeriod, value);
-    _displayPeriod = value;
+    load();
   }
 }
