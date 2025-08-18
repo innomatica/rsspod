@@ -324,18 +324,12 @@ class _SideBarState extends State<SideBar> {
   }
 
   Future _init() async {
-    // final prefs = await SharedPreferences.getInstance();
-    // setState(() {
-    //   displayPeriod = prefs.getInt(pKeyDisplayPeriod) ?? defaultDisplayPeriod;
-    // });
     setState(() {
       displayPeriod = widget.model.getDisplayPeriod();
     });
   }
 
   Future _dispose() async {
-    // final prefs = await SharedPreferences.getInstance();
-    // await prefs.setInt(pKeyDisplayPeriod, displayPeriod);
     await widget.model.setDisplayPeriod(displayPeriod);
   }
 

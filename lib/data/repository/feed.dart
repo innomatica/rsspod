@@ -332,7 +332,7 @@ class FeedRepository {
   Future<int> createEpisode(Episode episode) async {
     try {
       final data = episode.toSqlite();
-      data.remove('id');
+      // data.remove('id');
       final args = List.filled(data.length, '?').join(',');
       final sets = data.keys.map((e) => '$e = ?').join(',');
       return await _dbSrv.insert(
