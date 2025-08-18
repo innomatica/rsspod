@@ -301,7 +301,7 @@ class FeedRepository {
         channels.url as channel_url
       FROM episodes 
       INNER JOIN channels ON channels.id=episodes.channel_id
-      WHERE channel_id = ? 
+      WHERE episodes.channel_id = ? 
         AND DATE(episodes.published) > ?
       ORDER BY episodes.published DESC""",
         [channelId, start],
@@ -320,7 +320,7 @@ class FeedRepository {
         channels.image_url as channel_image_url 
       FROM episodes 
       INNER JOIN channels ON channels.id=episodes.channel_id
-      WHERE guid = ?""",
+      WHERE episodes.guid = ?""",
         [guid],
       );
       return row != null ? Episode.fromSqlite(row) : null;
