@@ -50,6 +50,8 @@ dependencies:
   html_unescape: ^2.0.0
   shared_preferences: ^2.5.3
   html: ^0.15.6
+  qr: ^3.0.2
+  image: ^4.5.4
 
 dev_dependencies:
   flutter_test:
