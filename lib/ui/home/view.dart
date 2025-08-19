@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../util/constants.dart';
 import '../../util/helpers.dart' show secsToHhMmSs, sizeStr, yymmdd;
 import '../../util/miniplayer.dart' show MiniPlayer;
+import '../../util/qrcodeimg.dart' show QrCodeImage;
 import '../../util/widgets.dart' show ChannelImage;
 import 'model.dart';
 
@@ -378,13 +379,44 @@ class _SideBarState extends State<SideBar> {
           ),
           Divider(indent: 16, endIndent: 16),
           ListTile(
-            title: Text('Source code repository'),
-            subtitle: Text('github'),
-            onTap: () => launchUrl(Uri.parse(sourceRepository)),
-          ),
-          ListTile(
             title: Text('App version'),
             subtitle: Text(appVersion),
+            onTap: () => launchUrl(Uri.parse(sourceRepository)),
+            contentPadding: EdgeInsets.only(left: 16.0, right: 8.0),
+            trailing: IconButton(
+              onPressed: () {
+                if (mounted) context.pop();
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: Text(
+                        "Download $appName",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      backgroundColor: Colors.white,
+                      contentPadding: EdgeInsets.all(32.0),
+                      content: Column(
+                        spacing: 16.0,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          QrCodeImage(data: releaseUrl),
+                          Text(
+                            releaseUrl,
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+              icon: Icon(Icons.qr_code_2_rounded, size: 32.0),
+            ),
+          ),
+          ListTile(
+            title: Text('Source code repository'),
+            subtitle: Text('github'),
             onTap: () => launchUrl(Uri.parse(sourceRepository)),
           ),
           ListTile(

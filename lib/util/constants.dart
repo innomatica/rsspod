@@ -5,6 +5,7 @@ const appId = 'com.innomatic.rsspod';
 
 const developerWebsite = 'https://innomatic.ca';
 const sourceRepository = 'https://github.com/innomatica/rsspod';
+const releaseUrl = 'https://github.com/innomatica/rsspod/releases';
 const favoriteUrl =
     'https://raw.githubusercontent.com/innomatica/rsspod/refs/heads/master/favorites.json';
 
