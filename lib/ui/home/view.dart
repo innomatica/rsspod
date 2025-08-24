@@ -288,7 +288,7 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
           body: RefreshIndicator(
-            onRefresh: widget.model.refreshData,
+            onRefresh: widget.model.refresh,
             child: _buildEpisodeList(),
           ),
           drawer: SideBar(model: widget.model),

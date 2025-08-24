@@ -128,7 +128,7 @@ class FeedRepository {
   }
 
   Future refreshFeeds({bool force = false}) async {
-    _logger.fine('updateFeeds: $force');
+    _logger.fine('refreshFeeds: $force');
     final channels = await getChannels();
     for (final channel in channels) {
       final today = DateTime.now();
@@ -141,6 +141,9 @@ class FeedRepository {
               Duration(days: channel.period ?? defaultUpdatePeriod),
             ),
           );
+      _logger.fine(
+        'channel:${channel.title}, published:${channel.published} => pubExpected:$pubExpected',
+      );
 
       // checked date is more than a period ago
       bool chkRequired =
@@ -150,12 +153,11 @@ class FeedRepository {
               Duration(days: channel.period ?? defaultUpdatePeriod),
             ),
           );
-
       _logger.fine(
-        'channel:${channel.id} pubExpected:$pubExpected, chkRequired:$chkRequired',
+        'channel:${channel.title}, checked:${channel.checked}, period:${channel.period}  => chkRequired:$chkRequired',
       );
 
-      if (force || (pubExpected && chkRequired)) {
+      if (force || pubExpected || chkRequired) {
         _logger.fine('pub:${channel.published}, chk:${channel.checked}');
         await refreshChannel(channel);
       }

@@ -122,8 +122,7 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  Future load() async {
-    _logger.fine('load');
+  Future _getEpisodes() async {
     _channels = await _feedRepo.getChannels();
 
     final spref = await SharedPreferences.getInstance();
@@ -137,13 +136,27 @@ class HomeViewModel extends ChangeNotifier {
       _episodes.addAll(episodes.where((e) => e.published.isAfter(refDate)));
       _episodes.sort((a, b) => b.published.compareTo(a.published));
     }
+  }
+
+  Future load() async {
+    _logger.fine('load');
+    // show existing list
+    await _getEpisodes();
+    notifyListeners();
+    // refresh feeds
+    await _feedRepo.refreshFeeds(force: false);
+    // show updated list
+    await _getEpisodes();
     notifyListeners();
   }
 
-  Future refreshData() async {
-    _logger.fine('refreshData');
+  Future refresh() async {
+    _logger.fine('refresh');
+    // refresh by force
     await _feedRepo.refreshFeeds(force: true);
-    await load();
+    // show updated list
+    await _getEpisodes();
+    notifyListeners();
   }
 
   // Audio
