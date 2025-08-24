@@ -1,6 +1,6 @@
 // app info
 const appName = 'RssPod';
-const appVersion = '1.0.3+4';
+const appVersion = '1.0.4+5';
 const appId = 'com.innomatic.rsspod';
 
 const developerWebsite = 'https://innomatic.ca';
